@@ -11,6 +11,8 @@
 
 ```erlang
 {<<"/your/[:route]">>, lasse_handler, [your_module]}
+% or
+{<<"/your/[:route]">>, lasse_handler, [{module, your_module}]}
 ```
 
 And, in your module, you have to implement the following behaviour:

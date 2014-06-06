@@ -1,3 +1,4 @@
+% @doc Server-Side Event handler for Cowboy 
 -module(lasse_handler).
 
 -export([
@@ -5,6 +6,8 @@
          info/3,
          terminate/3
         ]).
+
+-record(event, {id, name, data, retry}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Behavior definition
@@ -29,15 +32,16 @@ init(_Transport, Req, Opts) ->
     Module = module_option(Opts),
     Module:init(), % Should this accept an argument?
 
-    Headers = [{<<"content-type">>, <<"text/event-stream">>}],
+    Headers = [{<<"content-type">>, <<"text/event-stream">>},
+               {<<"cache-control">>, <<"no-cache">>}], % recommended to prevent caching of event data.
     {ok, Req2} = cowboy_req:chunked_reply(200, Headers, Req),
     {loop, Req2, [{module, Module}]}.
 
 info({message, Msg}, Req, State = [{module, Module}]) ->
     case Module:handle(Msg) of
-        {ok, {Id, Data}} ->
-            Message = ["id: ", Id, build_data(Data), "\n\n"],
-            ok = cowboy_req:chunk(Message, Req),
+        {ok, Event} when is_record(Event, event) ->
+            EventMsg = build_event(Event),
+            ok = cowboy_req:chunk(EventMsg, Req),
             {loop, Req, State};            
         {ok, terminate} ->
             {ok, Req, State}
@@ -58,12 +62,29 @@ module_option(Opts) ->
                                Module
     end.
 
+
+build_event(#event{id=Id, name=Name, data=Data, retry=Retry}) ->
+    [build_field("id: ", Id),
+     build_field("event: ", Name),
+     build_data(Data),
+     build_field("retry: ", Retry)].
+
+
+build_field(_, undefined) ->
+    [];
+build_field(_, "") ->
+    [];
+build_field(Name, Value) ->
+    [Name, Value].    
+
+
 build_data(Data) ->
     build_data(Data, []).
 
-build_data([], BinaryData) ->
-    lists:reverse(BinaryData);
-build_data([Data|MoreData], BinaryData) ->
-    build_data(MoreData, [["\ndata:", Data] | BinaryData]);
-build_data(Data, BinaryData) ->
-    build_data([Data], BinaryData).
+build_data([], Result) ->
+    lists:reverse(Result);
+build_data([Data|MoreData], Result) ->
+    build_data(MoreData, [["\ndata:", Data] | Result]);
+build_data(Data, Result) when is_binary(Data) ->
+    SplitData = binary:split(Data, <<"\n">>, [global]),
+    build_data(SplitData, Result).
