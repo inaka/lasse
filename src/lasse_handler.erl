@@ -75,7 +75,7 @@ init(_Transport, Req, Opts) ->
         {shutdown, StatusCode, Headers, Body, NewReq} ->
             cowboy_req:reply(StatusCode, Headers, Body, NewReq),
 
-            {shutdown, NewReq, no_state}
+            {shutdown, NewReq, #state{}}
     end.
 
 info({message, Msg}, Req, State) ->

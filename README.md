@@ -12,7 +12,7 @@
 ```erlang
 {<<"/your/[:route]">>, lasse_handler, [your_module]}
 % or
-{<<"/your/[:route]">>, lasse_handler, [{module, your_module}, {init_args, Args}}
+{<<"/your/[:route]">>, lasse_handler, [{module, your_module}, {init_args, Args}]}
 ```
 
 Specifying the ``module`` (e.g ``your_module``) is mandatory while providing a value for ``init_args`` is optional.
