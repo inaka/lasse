@@ -1,4 +1,4 @@
-% @doc Server-Sent Event handler for Cowboy 
+%%% @doc Server-Sent Event handler for Cowboy
 -module(lasse_handler).
 
 -export([
@@ -44,7 +44,10 @@
 
 -spec init(any(), any(), lasse_handler_options()) -> {loop, any(), record(state)}.
 init(_Transport, Req, Opts) ->
-    Module = get_value(module, Opts, hd(Opts)),
+    Module = case get_value(module, Opts, hd(Opts)) of
+                 Name when is_atom(Name) -> Name;
+                 _ -> throw(module_option_missing)
+             end,
     InitArgs = get_value(init_args, Opts, []),
 
     State = Module:init(InitArgs),
@@ -91,12 +94,12 @@ process_result(Result, Req, State) ->
 get_value(Key, PropList) ->
     case lists:keyfind(Key, 1, PropList) of
         {Key, Value} -> Value;
-        _ -> false
+        _ -> undefined
     end.
 
 get_value(Key, PropList, NotFound) ->
     case get_value(Key, PropList) of
-        false -> NotFound;
+        undefined -> NotFound;
         Value -> Value
     end.
 
@@ -107,14 +110,14 @@ build_event(Event) ->
      build_field(<<"retry: ">>, get_value(retry, Event)),
      <<"\n">>].
 
-build_field(_, false) ->
+build_field(_, undefined) ->
     [];
 build_field(_, "") ->
     [];
 build_field(Name, Value) ->
     [Name, Value, <<"\n">>].
 
-build_data(false) ->
+build_data(undefined) ->
     throw(data_required);
 build_data(Data) ->
     build_data(Data, []).
