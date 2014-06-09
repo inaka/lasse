@@ -26,7 +26,7 @@
     tuple('send', Event :: event(), NewState :: any())
         | tuple('nosend', NewState :: any())
         | tuple('stop', NewState :: any()).
--callback handle_info(Msg :: any(), Req :: any(), State :: any()) ->
+-callback handle_info(Msg :: any(), State :: any()) ->
     tuple('send', Event :: event(), NewState :: any())
         | tuple('nosend', NewState :: any())
         | tuple('stop', NewState :: any()).
