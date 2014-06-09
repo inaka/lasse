@@ -1,4 +1,4 @@
-% @doc Server-Side Event handler for Cowboy 
+% @doc Server-Sent Event handler for Cowboy 
 -module(lasse_handler).
 
 -export([
@@ -12,7 +12,11 @@
 %% Records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--record(state, {module, state}).
+-record(state, 
+        {
+          module :: module(),
+          state :: any()
+        }).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Behavior definition
@@ -23,13 +27,13 @@
 
 -callback init(InitArgs :: any()) -> State :: any().
 -callback handle_notify(Msg :: any(), State :: any()) ->
-    tuple('send', Event :: event(), NewState :: any())
-        | tuple('nosend', NewState :: any())
-        | tuple('stop', NewState :: any()).
+    {'send', Event :: event(), NewState :: any()}
+        | {'nosend', NewState :: any()}
+        | {'stop', NewState :: any()}.
 -callback handle_info(Msg :: any(), State :: any()) ->
-    tuple('send', Event :: event(), NewState :: any())
-        | tuple('nosend', NewState :: any())
-        | tuple('stop', NewState :: any()).
+    {'send', Event :: event(), NewState :: any()}
+        | {'nosend', NewState :: any()}
+        | {'stop', NewState :: any()}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Cowboy callbacks
