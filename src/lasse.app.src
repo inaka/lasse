@@ -1,0 +1,9 @@
+{
+  application, lasse,
+  [
+   {description, "Lasse: Server-Sent Event handler for Cowboy."},
+   {vsn, "0.1.0"},
+   {modules, [lasse_handler]},
+   {applications, [kernel, stdlib]}
+  ]
+}.
