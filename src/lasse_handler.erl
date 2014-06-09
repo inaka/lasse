@@ -22,18 +22,32 @@
 %% Behavior definition
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--type event_value() :: {'id', binary()} | {'event', binary()} | {'data', binary()} | {'retry', binary()}.
+-type event_value() :: 
+        {'id', binary()} | 
+        {'event', binary()} | 
+        {'data', binary()} | 
+        {'retry', binary()}.
 -type event() :: [event_value(), ...].
 
--callback init(InitArgs :: any()) -> State :: any().
+-callback init(InitArgs :: any(), Req :: cowboy_req:req()) ->
+    {ok, NewReq :: cowboy_req:req(), State :: any()} |
+    {
+      shutdown, 
+      StatusCode :: cowboy_req:http_status(), 
+      Headers :: cowboy:http_headers(),
+      Body :: iodata(),
+      NewReq :: cowboy_req:req()
+    }.
+
 -callback handle_notify(Msg :: any(), State :: any()) ->
-    {'send', Event :: event(), NewState :: any()}
-        | {'nosend', NewState :: any()}
-        | {'stop', NewState :: any()}.
+    {'send', Event :: event(), NewState :: any()} |
+    {'nosend', NewState :: any()} |
+    {'stop', NewState :: any()}.
+
 -callback handle_info(Msg :: any(), State :: any()) ->
-    {'send', Event :: event(), NewState :: any()}
-        | {'nosend', NewState :: any()}
-        | {'stop', NewState :: any()}.
+    {'send', Event :: event(), NewState :: any()} |
+    {'nosend', NewState :: any()} |
+    {'stop', NewState :: any()}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Cowboy callbacks
@@ -50,13 +64,19 @@ init(_Transport, Req, Opts) ->
              end,
     InitArgs = get_value(init_args, Opts, []),
 
-    State = Module:init(InitArgs),
+    case Module:init(InitArgs, Req) of
+         {ok, NewReq, State} ->
+            Headers = [{<<"content-type">>, <<"text/event-stream">>},
+                       % recommended to prevent caching of event data.
+                       {<<"cache-control">>, <<"no-cache">>}],
+            {ok, Req2} = cowboy_req:chunked_reply(200, Headers, NewReq),
 
-    Headers = [{<<"content-type">>, <<"text/event-stream">>},
-               {<<"cache-control">>, <<"no-cache">>}], % recommended to prevent caching of event data.
-    {ok, Req2} = cowboy_req:chunked_reply(200, Headers, Req),
+            {loop, Req2, #state{module = Module, state = State}};
+        {shutdown, StatusCode, Headers, Body, NewReq} ->
+            cowboy_req:reply(StatusCode, Headers, Body, NewReq),
 
-    {loop, Req2, #state{module = Module, state = State}}.
+            {shutdown, NewReq, no_state}
+    end.
 
 info({message, Msg}, Req, State) ->
     Module = State#state.module,
