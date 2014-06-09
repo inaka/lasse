@@ -6,4 +6,4 @@
    {modules, [lasse_handler]},
    {applications, [kernel, stdlib]}
   ]
-}
+}.
