@@ -33,7 +33,7 @@
     {ok, NewReq :: cowboy_req:req(), State :: any()} |
     {
       shutdown, 
-      StatusCode :: cowboy_req:http_status(), 
+      StatusCode :: cowboy:http_status(), 
       Headers :: cowboy:http_headers(),
       Body :: iodata(),
       NewReq :: cowboy_req:req()
@@ -99,17 +99,14 @@ terminate(_Reason, _Req, _State) ->
 %% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-process_result(Result, Req, State) ->
-    case Result of
-        {send, Event, NewState}  ->
-            EventMsg = build_event(Event),
-            ok = cowboy_req:chunk(EventMsg, Req),
-            {loop, Req, State#state{state = NewState}};
-        {nosend, NewState} ->
-            {loop, Req, State#state{state = NewState}};
-        {stop, NewState} ->
-            {ok, Req, State#state{state = NewState}}
-    end.
+process_result({send, Event, NewState}, Req, State) ->
+    EventMsg = build_event(Event),
+    ok = cowboy_req:chunk(EventMsg, Req),
+    {loop, Req, State#state{state = NewState}};
+process_result({nosend, NewState}, Req, State) ->
+    {loop, Req, State#state{state = NewState}};
+process_result({stop, NewState}, Req, State) ->
+    {ok, Req, State#state{state = NewState}}.
 
 get_value(Key, PropList) ->
     case lists:keyfind(Key, 1, PropList) of
@@ -140,12 +137,4 @@ build_field(Name, Value) ->
 build_data(undefined) ->
     throw(data_required);
 build_data(Data) ->
-    build_data(Data, []).
-
-build_data([], Result) ->
-    lists:reverse(Result);
-build_data([Data|MoreData], Result) ->
-    build_data(MoreData, [[<<"data: ">>, Data, <<"\n">>] | Result]);
-build_data(Data, Result) when is_binary(Data) ->
-    SplitData = binary:split(Data, <<"\n">>, [global]),
-    build_data(SplitData, Result).
+    [[<<"data: ">>, X, <<"\n">>] || X <- binary:split(Data, <<"\n">>, [global])].
