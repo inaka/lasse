@@ -19,8 +19,7 @@ start_listeners() ->
         cowboy_router:compile(
           [ {'_',
              [
-              {<<"/">>, default_handler, []},
-              {<<"/events">>, events_handler, []}
+              {<<"/events">>, lasse_handler, [events_handler]}
              ]
             }
           ]),
