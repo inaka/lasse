@@ -11,7 +11,7 @@
         ]).
 
 -export([
-         receive_two_chunks/1,
+         send_and_receive_two_chunks/1,
          shutdown_check_response/1,
          init_without_module_option/1,
          init_with_module_option/1
@@ -25,7 +25,7 @@
 -spec all() -> [atom()].
 all() ->
     [
-     receive_two_chunks,
+     send_and_receive_two_chunks,
      shutdown_check_response,
      init_without_module_option,
      init_with_module_option
@@ -47,15 +47,20 @@ end_per_suite(Config) ->
 %%% Tests Cases
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc Connect to the lasse_handler and check if both chunks are received.
--spec receive_two_chunks(config()) -> ok.
-receive_two_chunks(_Config) ->
+-spec send_and_receive_two_chunks(config()) -> ok.
+send_and_receive_two_chunks(_Config) ->
     %  Client connection is opened here
     % since doing it in init_per_suite and
     % providing the resulting Pid doesn't work.'
     Pid = open_conn(),
     ok = lasse_client:get(Pid, "/events"),
+    Fun = fun() -> whereis(events_handler) =/= undefined end,
+    wait_for(Fun, 100),
+    % first chunk
+    lasse_handler:notify(events_handler, <<"notify chunk">>),
     {chunk, <<"data: notify chunk\n\n">>} = response(),
+    % second chunk
+    events_handler ! <<"info chunk">>,
     {chunk, <<"data: info chunk\n\n">>} = response(),
 
     lasse_client:close(Pid).
@@ -88,7 +93,7 @@ init_without_module_option(_Config) ->
 -spec init_with_module_option(config()) -> ok.
 init_with_module_option(_Config) ->
     try
-        Opts = [{module, events_handler}],
+        Opts = [{module, dummy_handler}],
         lasse_handler:init({}, {}, Opts)
     catch
         error:function_clause -> ok
@@ -113,3 +118,18 @@ open_conn() ->
     {ok, Port} = application:get_env(cowboy, http_port),
     Host = "localhost",
     lasse_client:open(Host, Port).
+
+wait_for(Fun, Timeout) ->
+    SleepTime = 10,
+    Retries = erlang:round(Timeout / SleepTime),
+    wait_for(Fun, SleepTime, Retries).
+
+wait_for(_Fun, _SleepTime, 0) ->
+    throw(timeout_while_waiting);
+wait_for(Fun, SleepTime, Retries) ->
+    case Fun() of
+        true -> ok;
+        _ ->
+            timer:sleep(SleepTime),
+            wait_for(Fun, SleepTime, Retries - 1)
+    end.
