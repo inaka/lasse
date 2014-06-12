@@ -38,14 +38,21 @@ not_allowed_method(Config) ->
     % since doing it in init_per_suite and
     % providing the resulting Pid doesn't work.'
     Pid = open_conn(),
-    ok = lasse_client:get(Pid, "/events"),
-    receive
-         Data -> Data
-    after 5000 ->
-            exit(no_event_from_server)
-    end,
+    ok = lasse_client:get_chunked(Pid, "/events"),
+    {chunk, <<"data: notify chunk\n\n">>} = response(),
+    {chunk, <<"data: info chunk\n\n">>} = response(),
+
     lasse_client:close(Pid),
     Config.
+
+%% @doc Waits for messages that are supposed to be a reponse
+response() ->
+    receive
+        {response, Data} -> Data;
+        {chunk, Chunk} -> {chunk, Chunk}
+    after 5000 ->
+            exit(no_event_from_server)
+    end.
 
 open_conn() ->
     {ok, Port} = application:get_env(cowboy, http_port),

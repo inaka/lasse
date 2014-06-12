@@ -9,12 +9,12 @@
 
 init(_InitArgs, Req) ->
     lager:info("Initiating the handler."),
-    erlang:send_after(1000, self(), {message, <<"wazzzzzup">>}),
-    erlang:send_after(2000, self(), <<"wazzzzzup">>),
+    erlang:send_after(1000, self(), {message, <<"notify chunk">>}),
+    erlang:send_after(2000, self(), <<"info chunk">>),
     {ok, Req, {}}.
 
 handle_info(Msg, State) ->
-    {send, [{data, <<"Some important information update from info!\n", Msg/binary>>}], State}.
+    {send, [{data, Msg}], State}.
 
 handle_notify(Msg, State) ->
-    {send, [{data, <<"Some important information update from notify!\n", Msg/binary>>}], State}.
+    {send, [{data, Msg}], State}.
