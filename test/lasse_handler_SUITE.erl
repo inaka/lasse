@@ -126,7 +126,7 @@ open_conn() ->
 
 wait_for(Fun, Timeout) ->
     SleepTime = 10,
-    Retries = erlang:round(Timeout / SleepTime),
+    Retries = Timeout div SleepTime,
     wait_for(Fun, SleepTime, Retries).
 
 wait_for(_Fun, _SleepTime, 0) ->
