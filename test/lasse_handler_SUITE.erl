@@ -12,10 +12,16 @@
 
 -export([
          send_and_receive_two_chunks/1,
+         send_and_do_not_receive_anything/1,
+         send_data_and_id/1,
+         do_not_send_data/1,
          shutdown_check_response/1,
          init_without_module_option/1,
          init_with_module_option/1
         ]).
+
+-define(current_function(),
+        element(2, element(2, process_info(self(), current_function)))).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Common test functions
@@ -26,6 +32,9 @@
 all() ->
     [
      send_and_receive_two_chunks,
+     send_and_do_not_receive_anything,
+     send_data_and_id,
+     do_not_send_data,
      shutdown_check_response,
      init_without_module_option,
      init_with_module_option
@@ -47,38 +56,78 @@ end_per_suite(Config) ->
 %%% Tests Cases
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec send_and_receive_two_chunks(config()) -> ok.
 send_and_receive_two_chunks(_Config) ->
     %  Client connection is opened here
     % since doing it in init_per_suite and
     % providing the resulting Pid doesn't work.'
     Pid = open_conn(),
-    % Provide the name to use when registering the process.
-    ProcName = events_handler,
-    Headers = [{<<"process-name">>, term_to_binary(ProcName)}],
-    ok = lasse_client:get(Pid, "/events", Headers),
-
-    Fun = fun() -> whereis(ProcName) =/= undefined end,
-    wait_for(Fun, 100),
+    ProcName = ?current_function(),
+    get(Pid, ProcName, "/events"),
 
     % first chunk
-    lasse_handler:notify(ProcName, <<"notify chunk">>),
+    lasse_handler:notify(ProcName, send),
     {chunk, <<"data: notify chunk\n\n">>} = response(),
     % second chunk
-    events_handler ! <<"info chunk">>,
+    ProcName ! send,
     {chunk, <<"data: info chunk\n\n">>} = response(),
+
+    lasse_handler:notify(ProcName, stop),
 
     lasse_client:close(Pid).
 
--spec shutdown_check_response(config()) -> ok.
+send_and_do_not_receive_anything(_Config) ->
+    Pid = open_conn(),
+    ProcName = ?current_function(),
+    get(Pid, ProcName, "/events"),
+
+    % first chunk
+    lasse_handler:notify(ProcName, nosend),
+    try
+        {chunk, <<"data: notify chunk\n\n">>} = response()
+    catch
+        exit:no_event_from_server -> ok
+    end,
+
+    % second chunk
+    ProcName ! nosend,
+    try
+        {chunk, <<"data: info chunk\n\n">>} = response()
+    catch
+        exit:no_event_from_server -> ok
+    end,
+
+    lasse_handler:notify(ProcName, stop),
+
+    lasse_client:close(Pid).
+
+send_data_and_id(_Config) ->
+    Pid = open_conn(),
+    ProcName = ?current_function(),
+    get(Pid, ProcName, "/events"),
+
+    lasse_handler:notify(ProcName, send_id),
+    {chunk, <<"id: 1\ndata: notify chunk\n\n">>} = response().
+
+do_not_send_data(_Config) ->
+    Pid = open_conn(),
+    ProcName = ?current_function(),
+    get(Pid, ProcName, "/events"),
+
+    lasse_handler:notify(ProcName, no_data),
+    try
+        {chunk, <<"id: 1\ndata: notify chunk\n\n">>} = response()
+    catch
+        exit:no_event_from_server -> ok
+    end.
+
 shutdown_check_response(_Config) ->
     Pid = open_conn(),
+
     ok = lasse_client:get(Pid, "/shutdown"),
     <<"Sorry, shutdown!">> = response(),
 
     lasse_client:close(Pid).
 
--spec init_without_module_option(config()) -> ok.
 init_without_module_option(_Config) ->
     try
         Opts = [],
@@ -90,12 +139,9 @@ init_without_module_option(_Config) ->
         Opts2 = [{init_args, []}],
         lasse_handler:init({}, {}, Opts2)
     catch
-        throw:module_option_missing ->
-            % lager:info("~p", [Error]),
-            ok
+        throw:module_option_missing -> ok
     end.
 
--spec init_with_module_option(config()) -> ok.
 init_with_module_option(_Config) ->
     try
         Opts = [{module, dummy_handler}],
@@ -114,7 +160,7 @@ response() ->
     receive
         {response, Data} -> Data;
         {chunk, Chunk} -> {chunk, Chunk}
-    after 5000 ->
+    after 1000 ->
             exit(no_event_from_server)
     end.
 
@@ -123,6 +169,14 @@ open_conn() ->
     {ok, Port} = application:get_env(cowboy, http_port),
     Host = "localhost",
     lasse_client:open(Host, Port).
+
+-spec get(Pid :: pid(), Name :: atom(), Url :: string()) -> ok.
+get(Pid, Name, Url) ->
+    Headers = [{<<"process-name">>, term_to_binary(Name)}],
+    ok = lasse_client:get(Pid, Url, Headers),
+
+    Fun = fun() -> whereis(Name) =/= undefined end,
+    wait_for(Fun, 100).
 
 wait_for(Fun, Timeout) ->
     SleepTime = 10,

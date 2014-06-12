@@ -3,8 +3,8 @@
 
 -export([
          init/2,
-         handle_info/2,
-         handle_notify/2
+         handle_notify/2,
+         handle_info/2
         ]).
 
 init(_InitArgs, Req) ->
@@ -22,8 +22,29 @@ init(_InitArgs, Req) ->
 
     {ok, Req, {}}.
 
-handle_info(Msg, State) ->
-    {send, [{data, Msg}], State}.
+handle_notify(send, State) ->
+    {send, [{data, <<"notify chunk">>}], State};
+handle_notify(send_id, State) ->
+    Event = [
+             {id, <<"1">>},
+             {data, <<"notify chunk">>},
+             {name, ""}
+            ],
+    {send, Event, State};
+handle_notify(no_data, State) ->
+    Event = [
+             {id, <<"1">>},
+             {name, "no_data"}
+            ],
+    {send, Event, State};
+handle_notify(nosend, State) ->
+    {nosend, State};
+handle_notify(stop, State) ->
+    {stop, State}.
 
-handle_notify(Msg, State) ->
-    {send, [{data, Msg}], State}.
+handle_info(send, State) ->
+    {send, [{data, <<"info chunk">>}], State};
+handle_info(nosend, State) ->
+    {nosend, State};
+handle_info(stop, State) ->
+    {stop, State}.
