@@ -38,7 +38,7 @@ not_allowed_method(Config) ->
     % since doing it in init_per_suite and
     % providing the resulting Pid doesn't work.'
     Pid = open_conn(),
-    ok = lasse_client:get_chunked(Pid, "/events"),
+    ok = lasse_client:get(Pid, "/events"),
     {chunk, <<"data: notify chunk\n\n">>} = response(),
     {chunk, <<"data: info chunk\n\n">>} = response(),
 
