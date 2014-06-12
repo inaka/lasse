@@ -20,7 +20,8 @@ start_listeners() ->
           [ {'_',
              [
               {<<"/">>, index_handler, []},
-              {<<"/events">>, lasse_handler, [events_handler]}
+              {<<"/events">>, lasse_handler, [events_handler]},
+              {<<"/shutdown">>, lasse_handler, [shutdown_handler]}
              ]
             }
           ]),

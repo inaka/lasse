@@ -58,8 +58,9 @@
 
 -spec init(any(), any(), lasse_handler_options()) -> {loop, any(), record(state)}.
 init(_Transport, Req, Opts) ->
-    Module = case get_value(module, Opts, hd(Opts)) of
+    Module = case get_value(module, Opts, Opts) of
                  Name when is_atom(Name) -> Name;
+                 [Name] when is_atom(Name) -> Name;
                  _ -> throw(module_option_missing)
              end,
     InitArgs = get_value(init_args, Opts, []),
