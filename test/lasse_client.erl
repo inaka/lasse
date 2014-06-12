@@ -4,11 +4,12 @@
 -export([
          open/2,
          close/1,
-         get/2
+         get/2,
+         get/3
         ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Application behavior functions
+%%% Public functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -spec open(Host :: string(), Port :: integer()) -> {ok, pid()}.
@@ -22,7 +23,14 @@ close(Pid) ->
 
 -spec get(Pid :: pid(), Url :: string()) -> ok.
 get(Pid, Url) ->
-    Pid ! {get, self(), Url},
+    get(Pid, Url, []),
+    ok.
+
+-type headers() :: [{binary(), binary()}].
+
+-spec get(Pid :: pid(), Url :: string(), Headers :: headers()) -> ok.
+get(Pid, Url, Headers) ->
+    Pid ! {get, self(), Url, Headers},
     ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,12 +46,11 @@ init(Host, Port) ->
     {ok, Pid} = gun:open(Host, Port, Opts),
     loop(Pid).
 
-%% @doc loop that holds a gun connection and accepts.
 loop(Pid) ->
     receive
-        {get, From, Url} ->
+        {get, From, Url, Headers} ->
             lager:info("Getting ~p", [Url]),
-            StreamRef = gun:get(Pid, Url),
+            StreamRef = gun:get(Pid, Url, Headers),
             response(Pid, StreamRef, From),
             loop(Pid);
         shutdown ->

@@ -8,10 +8,14 @@
         ]).
 
 init(_InitArgs, Req) ->
-    register(?MODULE, self()),
-    lager:info("Initiating an ~p in ~p", [?MODULE, whereis(?MODULE)]),
-    %% erlang:send_after(10, self(), {message, <<"notify chunk">>}),
-    %% erlang:send_after(20, self(), <<"info chunk">>),
+    % Take process name from the "process-name" header.
+    {Headers, _} = cowboy_req:headers(Req),
+    {<<"process-name">>, ProcNameBin} = lists:keyfind(<<"process-name">>, 1, Headers),
+    ProcName = binary_to_term(ProcNameBin),
+
+    register(ProcName, self()),
+    lager:info("Initiating an ~p in ~p", [ProcName, whereis(ProcName)]),
+
     {ok, Req, {}}.
 
 handle_info(Msg, State) ->

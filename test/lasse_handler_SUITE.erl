@@ -53,11 +53,16 @@ send_and_receive_two_chunks(_Config) ->
     % since doing it in init_per_suite and
     % providing the resulting Pid doesn't work.'
     Pid = open_conn(),
-    ok = lasse_client:get(Pid, "/events"),
-    Fun = fun() -> whereis(events_handler) =/= undefined end,
+    % Provide the name to use when registering the process.
+    ProcName = events_handler,
+    Headers = [{<<"process-name">>, term_to_binary(ProcName)}],
+    ok = lasse_client:get(Pid, "/events", Headers),
+
+    Fun = fun() -> whereis(ProcName) =/= undefined end,
     wait_for(Fun, 100),
+
     % first chunk
-    lasse_handler:notify(events_handler, <<"notify chunk">>),
+    lasse_handler:notify(ProcName, <<"notify chunk">>),
     {chunk, <<"data: notify chunk\n\n">>} = response(),
     % second chunk
     events_handler ! <<"info chunk">>,
