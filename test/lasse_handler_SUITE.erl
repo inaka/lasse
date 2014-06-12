@@ -11,13 +11,17 @@
         ]).
 
 -export([
-         not_allowed_method/1
+         receive_two_chunks/1
         ]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common test functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% @private
 -spec all() -> [atom()].
 all() ->
-    [not_allowed_method].
+    [receive_two_chunks].
 
 -spec init_per_suite(config()) -> config().
 init_per_suite(Config) ->
@@ -31,9 +35,13 @@ end_per_suite(Config) ->
 
     Config.
 
-%% @doc Try to do a post.
--spec not_allowed_method(config()) -> ok.
-not_allowed_method(Config) ->
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tests Cases
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% @doc Connect to the lasse_handler and check if both chunks are received.
+-spec receive_two_chunks(config()) -> ok.
+receive_two_chunks(Config) ->
     %  Client connection is opened here
     % since doing it in init_per_suite and
     % providing the resulting Pid doesn't work.'
@@ -44,6 +52,10 @@ not_allowed_method(Config) ->
 
     lasse_client:close(Pid),
     Config.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Auxiliary functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% @doc Waits for messages that are supposed to be a reponse
 response() ->

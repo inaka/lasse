@@ -65,16 +65,16 @@ init(_Transport, Req, Opts) ->
     InitArgs = get_value(init_args, Opts, []),
 
     case Module:init(InitArgs, Req) of
-         {ok, NewReq, State} ->
+        {ok, NewReq, State} ->
             Headers = [{<<"content-type">>, <<"text/event-stream">>},
                        % recommended to prevent caching of event data.
                        {<<"cache-control">>, <<"no-cache">>}],
             {ok, Req2} = cowboy_req:chunked_reply(200, Headers, NewReq),
-
+            
             {loop, Req2, #state{module = Module, state = State}};
         {shutdown, StatusCode, Headers, Body, NewReq} ->
             cowboy_req:reply(StatusCode, Headers, Body, NewReq),
-
+            
             {shutdown, NewReq, #state{}}
     end.
 
