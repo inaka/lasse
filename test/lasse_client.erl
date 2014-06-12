@@ -30,7 +30,12 @@ get(Pid, Url) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init(Host, Port) ->
-    {ok, Pid} = gun:open(Host, Port),
+    Opts = [
+            {type, tcp},
+            {retry, 1},
+            {retry_timeout, 1}
+           ],
+    {ok, Pid} = gun:open(Host, Port, Opts),
     loop(Pid).
 
 loop(Pid) ->
@@ -51,24 +56,24 @@ response(Pid, StreamRef) ->
         {gun_response, Pid, StreamRef, fin, _Status, _Headers} ->
             no_data;
         {gun_response, Pid, StreamRef, nofin, _Status, _Headers} ->
-            receive_data(Pid, StreamRef);
+            receive_data(StreamRef);
         Msg ->
             lager:info("~p~n", [Msg]),
             exit({unexpected, Msg})
-    after 100000 ->
+    after 5000 ->
             exit(response_timeout)
     end.
 
-receive_data(Pid, StreamRef) ->
-    receive_data(Pid, StreamRef, <<"">>).
+receive_data(StreamRef) ->
+    receive_data(StreamRef, <<"">>).
 
-receive_data(Pid, StreamRef, DataAcc) ->
+receive_data(StreamRef, DataAcc) ->
     receive
         {'DOWN', _Tag, _, _, _Reason} ->
             {error, incomplete};
-        {gun_data, Pid, StreamRef, nofin, Data} ->
-            receive_data(Pid, StreamRef, <<DataAcc/binary, Data/binary>>);
-        {gun_data, Pid, StreamRef, fin, Data} ->
+        {gun_data, _Pid, StreamRef, nofin, Data} ->
+            receive_data(StreamRef, <<DataAcc/binary, Data/binary>>);
+        {gun_data, _Pid, StreamRef, fin, Data} ->
             NewDataAcc = <<DataAcc/binary, Data/binary>>,
             lager:info("Received: ~p~n", [NewDataAcc]),
             NewDataAcc

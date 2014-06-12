@@ -1,4 +1,5 @@
 .eunit
+.edts
 deps
 *.o
 *.beam
@@ -7,4 +8,5 @@ erl_crash.dump
 .rebar
 ebin
 logs
+log
 .erlang.mk*

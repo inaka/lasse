@@ -41,7 +41,7 @@ not_allowed_method(Config) ->
     ok = lasse_client:get(Pid, "/events"),
     receive
          Data -> Data
-    after 100000 ->
+    after 5000 ->
             exit(no_event_from_server)
     end,
     lasse_client:close(Pid),

@@ -13,3 +13,6 @@ TEST_ERLC_OPTS += +'{parse_transform, lager_transform}'
 
 CT_SUITES = lasse_handler
 CT_OPTS = -erl_args -config rel/sys.config
+
+test-shell: build-tests
+	erl -pa ebin -pa deps/*/ebin -pa test -s sync -config rel/sys.config
