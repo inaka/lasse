@@ -67,8 +67,8 @@ init(_Transport, Req, Opts) ->
 
     case Module:init(InitArgs, Req) of
         {ok, NewReq, State} ->
+            % "no-cache recommended to prevent caching of event data.
             Headers = [{<<"content-type">>, <<"text/event-stream">>},
-                       % recommended to prevent caching of event data.
                        {<<"cache-control">>, <<"no-cache">>}],
             {ok, Req2} = cowboy_req:chunked_reply(200, Headers, NewReq),
             

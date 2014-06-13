@@ -12,7 +12,7 @@ include erlang.mk
 TEST_ERLC_OPTS += +'{parse_transform, lager_transform}'
 
 CT_SUITES = lasse_handler
-CT_OPTS = -cover test/lasse_handler.coverspec -erl_args -config rel/sys.config 
+CT_OPTS = -cover test/lasse_handler.coverspec -cover_stop false -erl_args -config rel/sys.config 
 
 test-shell: build-tests
 	erl -pa ebin -pa deps/*/ebin -pa test -s sync -config rel/sys.config

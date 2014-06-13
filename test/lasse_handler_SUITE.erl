@@ -72,7 +72,6 @@ send_and_receive_two_chunks(_Config) ->
     {chunk, <<"data: info chunk\n\n">>} = response(),
 
     lasse_handler:notify(ProcName, stop),
-
     lasse_client:close(Pid).
 
 send_and_do_not_receive_anything(_Config) ->
@@ -82,22 +81,23 @@ send_and_do_not_receive_anything(_Config) ->
 
     % first chunk
     lasse_handler:notify(ProcName, nosend),
-    try
-        {chunk, <<"data: notify chunk\n\n">>} = response()
-    catch
-        exit:no_event_from_server -> ok
-    end,
+    ok = try
+             {chunk, <<"data: notify chunk\n\n">>} = response(),
+             fail
+         catch
+             exit:no_event_from_server -> ok
+         end,
 
     % second chunk
     ProcName ! nosend,
-    try
-        {chunk, <<"data: info chunk\n\n">>} = response()
-    catch
-        exit:no_event_from_server -> ok
-    end,
+    ok = try
+             {chunk, <<"data: info chunk\n\n">>} = response(),
+             fail
+         catch
+             exit:no_event_from_server -> ok
+         end,
 
     lasse_handler:notify(ProcName, stop),
-
     lasse_client:close(Pid).
 
 send_data_and_id(_Config) ->
@@ -106,7 +106,10 @@ send_data_and_id(_Config) ->
     get(Pid, ProcName, "/events"),
 
     lasse_handler:notify(ProcName, send_id),
-    {chunk, <<"id: 1\ndata: notify chunk\n\n">>} = response().
+    {chunk, <<"id: 1\ndata: notify chunk\n\n">>} = response(),
+
+    lasse_handler:notify(ProcName, stop),
+    lasse_client:close(Pid).
 
 do_not_send_data(_Config) ->
     Pid = open_conn(),
@@ -114,11 +117,14 @@ do_not_send_data(_Config) ->
     get(Pid, ProcName, "/events"),
 
     lasse_handler:notify(ProcName, no_data),
-    try
-        {chunk, <<"id: 1\ndata: notify chunk\n\n">>} = response()
-    catch
-        exit:no_event_from_server -> ok
-    end.
+    ok = try
+             {chunk, <<"id: 1\ndata: notify chunk\n\n">>} = response(),
+             fail
+         catch
+             exit:no_event_from_server -> ok
+         end,
+
+    lasse_client:close(Pid).
 
 shutdown_check_response(_Config) ->
     Pid = open_conn(),
@@ -129,26 +135,29 @@ shutdown_check_response(_Config) ->
     lasse_client:close(Pid).
 
 init_without_module_option(_Config) ->
-    try
-        Opts = [],
-        lasse_handler:init({}, {}, Opts)
-    catch
-        throw:_ -> ok
-    end,
-    try
-        Opts2 = [{init_args, []}],
-        lasse_handler:init({}, {}, Opts2)
-    catch
-        throw:module_option_missing -> ok
-    end.
+    ok = try
+             Opts = [],
+             lasse_handler:init({}, {}, Opts),
+             fail
+         catch
+             throw:_ -> ok
+         end,
+    ok = try
+             Opts2 = [{init_args, []}],
+             lasse_handler:init({}, {}, Opts2),
+             fail
+         catch
+             throw:module_option_missing -> ok
+         end.
 
 init_with_module_option(_Config) ->
-    try
-        Opts = [{module, dummy_handler}],
-        lasse_handler:init({}, {}, Opts)
-    catch
-        error:function_clause -> ok
-    end.
+    ok = try
+             Opts = [{module, dummy_handler}],
+             lasse_handler:init({}, {}, Opts),
+             fail
+         catch
+             error:function_clause -> ok
+         end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Auxiliary functions
