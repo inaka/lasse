@@ -1,5 +1,15 @@
 %%% @doc HTTP client for testing using gun.
 -module(lasse_client).
+-behavior(gen_server).
+
+-export([
+         init/1,
+         handle_call/3,
+         handle_cast/2,
+         handle_info/2,
+         code_change/3,
+         terminate/2
+        ]).
 
 -export([
          open/2,
@@ -14,11 +24,12 @@
 
 -spec open(Host :: string(), Port :: integer()) -> {ok, pid()}.
 open(Host, Port) ->
-    proc_lib:spawn_link(fun () -> init(Host, Port) end).
+    {ok, Pid} = gen_server:start_link(lasse_client, [Host, Port], []),
+    Pid.
 
 -spec close(pid()) -> ok.
 close(Pid) ->
-    Pid ! 'shutdown',
+    gen_server:cast(Pid, 'shutdown'),
     ok.
 
 -spec get(Pid :: pid(), Url :: string()) -> ok.
@@ -30,32 +41,45 @@ get(Pid, Url) ->
 
 -spec get(Pid :: pid(), Url :: string(), Headers :: headers()) -> ok.
 get(Pid, Url, Headers) ->
-    Pid ! {get, self(), Url, Headers},
+    gen_server:cast(Pid, {get, self(), Url, Headers}),
     ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Local functions
+%%% gen_server callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-init(Host, Port) ->
+init([Host, Port]) ->
     Opts = [
             {type, tcp},
             {retry, 1},
             {retry_timeout, 1}
            ],
-    {ok, Pid} = gun:open(Host, Port, Opts),
-    loop(Pid).
+    {ok, _Pid} = gun:open(Host, Port, Opts).
 
-loop(Pid) ->
-    receive
-        {get, From, Url, Headers} ->
-            lager:info("Getting ~p", [Url]),
-            StreamRef = gun:get(Pid, Url, Headers),
-            response(Pid, StreamRef, From),
-            loop(Pid);
-        shutdown ->
-            gun:shutdown(Pid)
-    end.
+handle_call(_Msg, _From, Pid) ->
+    {noreply, Pid}.
+
+handle_cast({get, From, Url, Headers}, Pid) ->
+    lager:info("Getting ~p", [Url]),
+    StreamRef = gun:get(Pid, Url, Headers),
+    response(Pid, StreamRef, From),
+    {noreply, Pid};
+handle_cast(shutdown, Pid) ->
+    {stop, normal, Pid}.
+
+handle_info(_Msg, Pid) ->
+    {noreply, Pid}.
+
+code_change(_OldVsn, _State, _Extra) ->
+    ok.
+
+terminate(_Reason, Pid) ->
+    gun:shutdown(Pid),
+    ok.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Local functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 response(Pid, StreamRef, From) ->
     receive
