@@ -66,10 +66,11 @@ send_and_receive_two_chunks(_Config) ->
 
     % first chunk
     lasse_handler:notify(ProcName, send),
-    {chunk, <<"data: notify chunk\n\n">>} = response(),
+    check_response(Pid, {chunk, <<"data: notify chunk\n\n">>}),
+
     % second chunk
     ProcName ! send,
-    {chunk, <<"data: info chunk\n\n">>} = response(),
+    check_response(Pid, {chunk, <<"data: info chunk\n\n">>}),
 
     lasse_handler:notify(ProcName, stop),
     lasse_client:close(Pid).
@@ -81,20 +82,21 @@ send_and_do_not_receive_anything(_Config) ->
 
     % first chunk
     lasse_handler:notify(ProcName, nosend),
+
     ok = try
-             {chunk, <<"data: notify chunk\n\n">>} = response(),
+             check_response(Pid, {chunk, <<"data: notify chunk\n\n">>}),
              fail
          catch
-             exit:no_event_from_server -> ok
+             error:timeout_while_waiting -> ok
          end,
 
     % second chunk
     ProcName ! nosend,
     ok = try
-             {chunk, <<"data: info chunk\n\n">>} = response(),
+             check_response(Pid, {chunk, <<"data: info chunk\n\n">>}),
              fail
          catch
-             exit:no_event_from_server -> ok
+             error:timeout_while_waiting -> ok
          end,
 
     lasse_handler:notify(ProcName, stop),
@@ -106,7 +108,8 @@ send_data_and_id(_Config) ->
     get(Pid, ProcName, "/events"),
 
     lasse_handler:notify(ProcName, send_id),
-    {chunk, <<"id: 1\ndata: notify chunk\n\n">>} = response(),
+
+    check_response(Pid, {chunk, <<"id: 1\ndata: notify chunk\n\n">>}),
 
     lasse_handler:notify(ProcName, stop),
     lasse_client:close(Pid).
@@ -118,10 +121,10 @@ do_not_send_data(_Config) ->
 
     lasse_handler:notify(ProcName, no_data),
     ok = try
-             {chunk, <<"id: 1\ndata: notify chunk\n\n">>} = response(),
+             check_response(Pid, {chunk, <<"id: 1\ndata: notify chunk\n\n">>}),
              fail
          catch
-             exit:no_event_from_server -> ok
+             error:timeout_while_waiting -> ok
          end,
 
     lasse_client:close(Pid).
@@ -129,8 +132,8 @@ do_not_send_data(_Config) ->
 shutdown_check_response(_Config) ->
     Pid = open_conn(),
 
-    ok = lasse_client:get(Pid, "/shutdown"),
-    <<"Sorry, shutdown!">> = response(),
+    ok = lasse_client:start_get(Pid, "/shutdown"),
+    check_response(Pid, {response, <<"Sorry, shutdown!">>}),
 
     lasse_client:close(Pid).
 
@@ -163,26 +166,17 @@ init_with_module_option(_Config) ->
 %%% Auxiliary functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc Waits for messages that are supposed to be a reponse
--spec response() -> binary() | {chunk, binary()}.
-response() ->
-    receive
-        {response, Data} -> Data;
-        {chunk, Chunk} -> {chunk, Chunk}
-    after 1000 ->
-            exit(no_event_from_server)
-    end.
-
 -spec open_conn() -> pid().
 open_conn() ->
     {ok, Port} = application:get_env(cowboy, http_port),
     Host = "localhost",
-    lasse_client:open(Host, Port).
+    {ok, Pid} = lasse_client:connect(Host, Port),
+    Pid.
 
 -spec get(Pid :: pid(), Name :: atom(), Url :: string()) -> ok.
 get(Pid, Name, Url) ->
     Headers = [{<<"process-name">>, term_to_binary(Name)}],
-    ok = lasse_client:get(Pid, Url, Headers),
+    ok = lasse_client:start_get(Pid, Url, Headers),
 
     Fun = fun() -> whereis(Name) =/= undefined end,
     wait_for(Fun, 100).
@@ -193,7 +187,7 @@ wait_for(Fun, Timeout) ->
     wait_for(Fun, SleepTime, Retries).
 
 wait_for(_Fun, _SleepTime, 0) ->
-    throw(timeout_while_waiting);
+    error(timeout_while_waiting);
 wait_for(Fun, SleepTime, Retries) ->
     case Fun() of
         true -> ok;
@@ -201,3 +195,7 @@ wait_for(Fun, SleepTime, Retries) ->
             timer:sleep(SleepTime),
             wait_for(Fun, SleepTime, Retries - 1)
     end.
+
+check_response(Pid, Response) ->
+    Fun = fun() -> Response =:= lasse_client:pop(Pid) end,
+    wait_for(Fun, 100).

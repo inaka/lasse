@@ -13,8 +13,8 @@ init(_InitArgs, Req) ->
     case lists:keyfind(<<"process-name">>, 1, Headers) of
         {<<"process-name">>, ProcNameBin} ->
             ProcName = binary_to_term(ProcNameBin),
-            lager:info("Initiating an ~p in ~p", [ProcName, whereis(ProcName)]),
-            register(ProcName, self());
+            register(ProcName, self()),
+            lager:info("Initiating an ~p in ~p", [ProcName, whereis(ProcName)]);
         _ ->
             lager:info("Initiating handler"),
             ok
