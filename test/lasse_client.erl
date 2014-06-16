@@ -8,6 +8,8 @@
          close/1,
          start_get/2,
          start_get/3,
+         start_post/2,
+         start_post/3,
          pop/1
         ]).
 
@@ -63,6 +65,15 @@ start_get(Pid, Url) ->
 start_get(Pid, Url, Headers) ->
     gen_fsm:send_event(Pid, {get, Url, Headers}).
 
+-spec start_post(Pid :: pid(), Url :: string()) -> ok.
+start_post(Pid, Url) ->
+    start_post(Pid, Url, []),
+    ok.
+
+-spec start_post(Pid :: pid(), Url :: string(), Headers :: headers()) -> ok.
+start_post(Pid, Url, Headers) ->
+    gen_fsm:send_event(Pid, {post, Url, Headers}).
+
 -spec pop(Pid :: pid()) -> {response, binary()} | {chunk, binary()}.
 pop(Pid) ->
     gen_fsm:sync_send_all_state_event(Pid, get_response).
@@ -113,14 +124,25 @@ open({get, Url, Headers}, State = #state{pid = Pid}) ->
     StreamRef = gun:get(Pid, Url, Headers),
     lager:info("Getting ~p, ref ~p", [Url, StreamRef]),
 
+    {next_state, wait_response, State#state{stream = StreamRef}};
+open({post, Url, Headers}, State = #state{pid = Pid}) ->
+    StreamRef = gun:post(Pid, Url, Headers),
+    lager:info("Posting ~p, ref ~p", [Url, StreamRef]),
+
     {next_state, wait_response, State#state{stream = StreamRef}}.
 
 wait_response({'DOWN', _, _, _, Reason}, _State) ->
     exit(Reason);
-wait_response({gun_response, Pid, StreamRef, fin, _, _},
+wait_response({gun_response, Pid, StreamRef, fin, StatusCode, _},
               State = #state{pid = Pid, stream = StreamRef}) ->
-    lager:info("~p", [response_fin]),
-    {next_state, done, State};
+    lager:info("~p: ~p", [StatusCode, response_fin]),
+
+    Responses = State#state.responses,
+    NewResponses = queue:in({no_response, StatusCode}, Responses),
+
+    NewState = State#state{responses = NewResponses},
+
+    {next_state, done, NewState};
 wait_response({gun_response, Pid, StreamRef, nofin, _, Headers},
               State = #state{pid = Pid, stream = StreamRef}) ->
     lager:info("~p", [response_nofin]),

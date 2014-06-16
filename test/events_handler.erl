@@ -4,7 +4,9 @@
 -export([
          init/2,
          handle_notify/2,
-         handle_info/2
+         handle_info/2,
+         handle_error/3,
+         terminate/3
         ]).
 
 init(_InitArgs, Req) ->
@@ -48,3 +50,9 @@ handle_info(nosend, State) ->
     {nosend, State};
 handle_info(stop, State) ->
     {stop, State}.
+
+handle_error(_Msg, _Reason, State) ->
+    State.
+
+terminate(_Reason, _Req, _State) ->
+    ok.

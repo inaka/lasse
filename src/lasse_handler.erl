@@ -27,7 +27,13 @@
         {'event', binary()} | 
         {'data', binary()} | 
         {'retry', binary()}.
+
 -type event() :: [event_value(), ...].
+
+-type result() ::
+    {'send', Event :: event(), NewState :: any()} |
+    {'nosend', NewState :: any()} |
+    {'stop', NewState :: any()}.
 
 -callback init(InitArgs :: any(), Req :: cowboy_req:req()) ->
     {ok, NewReq :: cowboy_req:req(), State :: any()} |
@@ -40,14 +46,18 @@
     }.
 
 -callback handle_notify(Msg :: any(), State :: any()) ->
-    {'send', Event :: event(), NewState :: any()} |
-    {'nosend', NewState :: any()} |
-    {'stop', NewState :: any()}.
+    result().
 
 -callback handle_info(Msg :: any(), State :: any()) ->
-    {'send', Event :: event(), NewState :: any()} |
-    {'nosend', NewState :: any()} |
-    {'stop', NewState :: any()}.
+    result().
+
+-callback handle_error(Msg :: any(), Reason :: any(), State :: any()) ->
+    any().
+
+-callback terminate(Reason :: any(),
+                    Req :: cowboy_req:req(),
+                    State :: any()) ->
+    any().
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Cowboy callbacks
@@ -65,19 +75,8 @@ init(_Transport, Req, Opts) ->
              end,
     InitArgs = get_value(init_args, Opts, []),
 
-    case Module:init(InitArgs, Req) of
-        {ok, NewReq, State} ->
-            % "no-cache recommended to prevent caching of event data.
-            Headers = [{<<"content-type">>, <<"text/event-stream">>},
-                       {<<"cache-control">>, <<"no-cache">>}],
-            {ok, Req2} = cowboy_req:chunked_reply(200, Headers, NewReq),
-            
-            {loop, Req2, #state{module = Module, state = State}};
-        {shutdown, StatusCode, Headers, Body, NewReq} ->
-            cowboy_req:reply(StatusCode, Headers, Body, NewReq),
-            
-            {shutdown, NewReq, #state{}}
-    end.
+    InitResult = Module:init(InitArgs, Req),
+    handle_init(InitResult, Module).
 
 info({message, Msg}, Req, State) ->
     Module = State#state.module,
@@ -93,17 +92,48 @@ info(Msg, Req, State) ->
 notify(Pid, Msg) ->
     Pid ! {message, Msg}.
 
-terminate(_Reason, _Req, _State) ->
+terminate(Reason, Req, State) ->
+    Module = State#state.module,
+    ModuleState = State#state.state,
+    lager:info("Terminating module: ~p", [Module]),
+    Module:terminate(Reason, Req, ModuleState),
     ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+handle_init({ok, Req, State}, Module) ->
+    case cowboy_req:method(Req) of
+        {<<"GET">>, Req1} ->
+            % "no-cache recommended to prevent caching of event data.
+            Headers = [{<<"content-type">>, <<"text/event-stream">>},
+                       {<<"cache-control">>, <<"no-cache">>}],
+            {ok, Req2} = cowboy_req:chunked_reply(200, Headers, Req1),
+
+            {loop, Req2, #state{module = Module, state = State}};
+        {_OtherMethod, _} ->
+            Headers = [{<<"content-type">>, <<"text/html">>}],
+            StatusCode = 405, % Method not Allowed
+            cowboy_req:reply(StatusCode, Headers, Req),
+            {shutdown, Req, #state{module = Module}}
+    end;
+handle_init({shutdown, StatusCode, Headers, Body, NewReq}, Module) ->
+    cowboy_req:reply(StatusCode, Headers, Body, NewReq),
+
+    {shutdown, NewReq, #state{module = Module}}.
+
 process_result({send, Event, NewState}, Req, State) ->
     EventMsg = build_event(Event),
-    ok = cowboy_req:chunk(EventMsg, Req),
-    {loop, Req, State#state{state = NewState}};
+    case cowboy_req:chunk(EventMsg, Req) of
+        {error, Reason} ->
+            Module = State#state.module,
+            ModuleState = State#state.state,
+            NewModuleState = Module:handle_error(EventMsg, Reason, ModuleState),
+            {ok, Req, State#state{module = NewModuleState}};
+        ok ->
+            {loop, Req, State#state{state = NewState}}
+    end;
 process_result({nosend, NewState}, Req, State) ->
     {loop, Req, State#state{state = NewState}};
 process_result({stop, NewState}, Req, State) ->

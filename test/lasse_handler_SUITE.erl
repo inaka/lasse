@@ -15,6 +15,8 @@
          send_and_do_not_receive_anything/1,
          send_data_and_id/1,
          do_not_send_data/1,
+         send_post_and_fail/1,
+         cause_chunk_to_fail/1,
          shutdown_check_response/1,
          init_without_module_option/1,
          init_with_module_option/1
@@ -35,6 +37,8 @@ all() ->
      send_and_do_not_receive_anything,
      send_data_and_id,
      do_not_send_data,
+     send_post_and_fail,
+     cause_chunk_to_fail,
      shutdown_check_response,
      init_without_module_option,
      init_with_module_option
@@ -129,6 +133,28 @@ do_not_send_data(_Config) ->
 
     lasse_client:close(Pid).
 
+send_post_and_fail(_Config) ->
+    Pid = open_conn(),
+    ProcName = ?current_function(),
+
+    post(Pid, ProcName, "/events"),
+    check_response(Pid, {no_response, 405}),
+
+    lasse_client:close(Pid).
+
+cause_chunk_to_fail(_Config) ->
+    try
+        Req = {},
+        State = {state, events_handler, {}},
+
+        meck:new(cowboy_req, [passthrough]),
+        meck:expect(cowboy_req, chunk, fun(_, _) -> {error, just_because} end),
+        {ok, Req, _}  = lasse_handler:info(send, Req, State)
+    after
+        catch meck:unload(cowboy_req)
+    end.
+
+
 shutdown_check_response(_Config) ->
     Pid = open_conn(),
 
@@ -143,7 +169,7 @@ init_without_module_option(_Config) ->
              lasse_handler:init({}, {}, Opts),
              fail
          catch
-             throw:_ -> ok
+             throw:module_option_missing -> ok
          end,
     ok = try
              Opts2 = [{init_args, []}],
@@ -154,13 +180,20 @@ init_without_module_option(_Config) ->
          end.
 
 init_with_module_option(_Config) ->
-    ok = try
-             Opts = [{module, dummy_handler}],
-             lasse_handler:init({}, {}, Opts),
-             fail
-         catch
-             error:function_clause -> ok
-         end.
+    try
+        Req = {},
+        State = {state, dummy_handler, {}},
+
+        meck:new(cowboy_req, [passthrough]),
+        meck:expect(cowboy_req, method, fun(Req) -> {<<"GET">>, Req} end),
+        ChunkedReply = fun(_, _, Req) -> {ok, Req} end,
+        meck:expect(cowboy_req, chunked_reply, ChunkedReply),
+
+        Opts = [{module, dummy_handler}],
+        {loop, Req, State} = lasse_handler:init({}, {}, Opts)
+    after
+        catch meck:unload(cowboy_req)
+    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Auxiliary functions
@@ -181,6 +214,12 @@ get(Pid, Name, Url) ->
     Fun = fun() -> whereis(Name) =/= undefined end,
     wait_for(Fun, 100).
 
+post(Pid, Name, Url) ->
+    Headers = [{<<"process-name">>, term_to_binary(Name)}],
+    ok = lasse_client:start_post(Pid, Url, Headers).
+
+%% @doc Checks if the function Fun evaluates to true every 10ms until
+%% it timeouts.
 wait_for(Fun, Timeout) ->
     SleepTime = 10,
     Retries = Timeout div SleepTime,
