@@ -31,12 +31,12 @@
 -type event() :: [event_value(), ...].
 
 -type result() ::
-    {'send', Event :: event(), NewState :: record(state)} |
-    {'nosend', NewState :: record(state)} |
-    {'stop', NewState :: record(state)}.
+    {'send', Event :: event(), NewState :: any()} |
+    {'nosend', NewState :: any()} |
+    {'stop', NewState :: any()}.
 
 -callback init(InitArgs :: any(), Req :: cowboy_req:req()) ->
-    {ok, NewReq :: cowboy_req:req(), State :: record(state)} |
+    {ok, NewReq :: cowboy_req:req(), State :: any()} |
     {
       shutdown, 
       StatusCode :: cowboy:http_status(), 
@@ -45,18 +45,18 @@
       NewReq :: cowboy_req:req()
     }.
 
--callback handle_notify(Msg :: any(), State :: record(state)) ->
+-callback handle_notify(Msg :: any(), State :: any()) ->
     result().
 
--callback handle_info(Msg :: any(), State :: record(state)) ->
+-callback handle_info(Msg :: any(), State :: any()) ->
     result().
 
--callback handle_error(Msg :: any(), Reason :: any(), State :: record(state)) ->
+-callback handle_error(Msg :: any(), Reason :: any(), State :: any()) ->
     any().
 
 -callback terminate(Reason :: any(),
                     Req :: cowboy_req:req(),
-                    State :: record(state)) ->
+                    State :: any()) ->
     any().
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
