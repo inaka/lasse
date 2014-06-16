@@ -16,6 +16,7 @@
          send_data_and_id/1,
          do_not_send_data/1,
          send_post_and_fail/1,
+         cause_chunk_to_fail/1,
          shutdown_check_response/1,
          init_without_module_option/1,
          init_with_module_option/1
@@ -39,6 +40,7 @@ all() ->
      send_data_and_id,
      do_not_send_data,
      send_post_and_fail,
+     cause_chunk_to_fail,
      shutdown_check_response,
      init_without_module_option,
      init_with_module_option
@@ -141,6 +143,14 @@ send_post_and_fail(_Config) ->
     check_response(Pid, {no_response, 405}),
 
     lasse_client:close(Pid).
+
+cause_chunk_to_fail(_Config) ->
+    {ok, Port} = application:get_env(cowboy, http_port),
+    {ok, Socket} = gen_tcp:connect("localhost", Port, []),
+    ok = gen_tcp:close(Socket), % close the socket so cowboy_req:chunk fails.
+
+    DummyReq = #http_req{resp_state=chunks, transport=ranch_tcp, socket=Socket},
+    lasse_handler:info(send, DummyReq, {state, events_handler, {}}).
 
 shutdown_check_response(_Config) ->
     Pid = open_conn(),
