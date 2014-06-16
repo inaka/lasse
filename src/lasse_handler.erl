@@ -58,23 +58,24 @@
 
 -spec init(any(), any(), lasse_handler_options()) -> {loop, any(), record(state)}.
 init(_Transport, Req, Opts) ->
-    Module = case get_value(module, Opts, hd(Opts)) of
+    Module = case get_value(module, Opts, Opts) of
                  Name when is_atom(Name) -> Name;
+                 [Name] when is_atom(Name) -> Name;
                  _ -> throw(module_option_missing)
              end,
     InitArgs = get_value(init_args, Opts, []),
 
     case Module:init(InitArgs, Req) of
-         {ok, NewReq, State} ->
+        {ok, NewReq, State} ->
+            % "no-cache recommended to prevent caching of event data.
             Headers = [{<<"content-type">>, <<"text/event-stream">>},
-                       % recommended to prevent caching of event data.
                        {<<"cache-control">>, <<"no-cache">>}],
             {ok, Req2} = cowboy_req:chunked_reply(200, Headers, NewReq),
-
+            
             {loop, Req2, #state{module = Module, state = State}};
         {shutdown, StatusCode, Headers, Body, NewReq} ->
             cowboy_req:reply(StatusCode, Headers, Body, NewReq),
-
+            
             {shutdown, NewReq, #state{}}
     end.
 
