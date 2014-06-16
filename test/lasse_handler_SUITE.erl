@@ -25,8 +25,6 @@
 -define(current_function(),
         element(2, element(2, process_info(self(), current_function)))).
 
--include("http_req.hrl").
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Common test functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -145,12 +143,17 @@ send_post_and_fail(_Config) ->
     lasse_client:close(Pid).
 
 cause_chunk_to_fail(_Config) ->
-    {ok, Port} = application:get_env(cowboy, http_port),
-    {ok, Socket} = gen_tcp:connect("localhost", Port, []),
-    ok = gen_tcp:close(Socket), % close the socket so cowboy_req:chunk fails.
+    try
+        Req = {},
+        State = {state, events_handler, {}},
 
-    DummyReq = #http_req{resp_state=chunks, transport=ranch_tcp, socket=Socket},
-    lasse_handler:info(send, DummyReq, {state, events_handler, {}}).
+        meck:new(cowboy_req, [passthrough]),
+        meck:expect(cowboy_req, chunk, fun(_, _) -> {error, just_because} end),
+        {ok, Req, _}  = lasse_handler:info(send, Req, State)
+    after
+        catch meck:unload(cowboy_req)
+    end.
+
 
 shutdown_check_response(_Config) ->
     Pid = open_conn(),
@@ -161,31 +164,36 @@ shutdown_check_response(_Config) ->
     lasse_client:close(Pid).
 
 init_without_module_option(_Config) ->
-    DummyReq = #http_req{},
     ok = try
              Opts = [],
-             lasse_handler:init({}, DummyReq, Opts),
+             lasse_handler:init({}, {}, Opts),
              fail
          catch
-             throw:_ -> ok
+             throw:module_option_missing -> ok
          end,
     ok = try
              Opts2 = [{init_args, []}],
-             lasse_handler:init({}, DummyReq, Opts2),
+             lasse_handler:init({}, {}, Opts2),
              fail
          catch
              throw:module_option_missing -> ok
          end.
 
 init_with_module_option(_Config) ->
-    DummyReq = #http_req{},
-    ok = try
-             Opts = [{module, dummy_handler}],
-             lasse_handler:init({}, DummyReq, Opts),
-             fail
-         catch
-             error:undef -> ok % cowboy will generate undef error when sending.
-         end.
+    try
+        Req = {},
+        State = {state, dummy_handler, {}},
+
+        meck:new(cowboy_req, [passthrough]),
+        meck:expect(cowboy_req, method, fun(Req) -> {<<"GET">>, Req} end),
+        ChunkedReply = fun(_, _, Req) -> {ok, Req} end,
+        meck:expect(cowboy_req, chunked_reply, ChunkedReply),
+
+        Opts = [{module, dummy_handler}],
+        {loop, Req, State} = lasse_handler:init({}, {}, Opts)
+    after
+        catch meck:unload(cowboy_req)
+    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Auxiliary functions
