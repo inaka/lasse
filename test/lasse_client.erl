@@ -133,10 +133,16 @@ open({post, Url, Headers}, State = #state{pid = Pid}) ->
 
 wait_response({'DOWN', _, _, _, Reason}, _State) ->
     exit(Reason);
-wait_response({gun_response, Pid, StreamRef, fin, _, _},
+wait_response({gun_response, Pid, StreamRef, fin, StatusCode, _},
               State = #state{pid = Pid, stream = StreamRef}) ->
-    lager:info("~p", [response_fin]),
-    {next_state, done, State};
+    lager:info("~p: ~p", [StatusCode, response_fin]),
+
+    Responses = State#state.responses,
+    NewResponses = queue:in({no_response, StatusCode}, Responses),
+
+    NewState = State#state{responses = NewResponses},
+
+    {next_state, done, NewState};
 wait_response({gun_response, Pid, StreamRef, nofin, _, Headers},
               State = #state{pid = Pid, stream = StreamRef}) ->
     lager:info("~p", [response_nofin]),

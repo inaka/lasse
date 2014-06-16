@@ -137,12 +137,8 @@ send_post_and_fail(_Config) ->
     Pid = open_conn(),
     ProcName = ?current_function(),
 
-    ok = try
-             post(Pid, ProcName, "/events"),
-             fail
-         catch
-             error:timeout_while_waiting -> ok
-         end,
+    post(Pid, ProcName, "/events"),
+    check_response(Pid, {no_response, 405}),
 
     lasse_client:close(Pid).
 
@@ -202,10 +198,7 @@ get(Pid, Name, Url) ->
 
 post(Pid, Name, Url) ->
     Headers = [{<<"process-name">>, term_to_binary(Name)}],
-    ok = lasse_client:start_post(Pid, Url, Headers),
-
-    Fun = fun() -> whereis(Name) =/= undefined end,
-    wait_for(Fun, 100).
+    ok = lasse_client:start_post(Pid, Url, Headers).
 
 %% @doc Checks if the function Fun evaluates to true every 10ms until
 %% it timeouts.
