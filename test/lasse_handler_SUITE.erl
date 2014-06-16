@@ -23,6 +23,8 @@
 -define(current_function(),
         element(2, element(2, process_info(self(), current_function)))).
 
+-include("http_req.hrl").
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Common test functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,28 +140,30 @@ shutdown_check_response(_Config) ->
     lasse_client:close(Pid).
 
 init_without_module_option(_Config) ->
+    DummyReq = #http_req{},
     ok = try
              Opts = [],
-             lasse_handler:init({}, {}, Opts),
+             lasse_handler:init({}, DummyReq, Opts),
              fail
          catch
              throw:_ -> ok
          end,
     ok = try
              Opts2 = [{init_args, []}],
-             lasse_handler:init({}, {}, Opts2),
+             lasse_handler:init({}, DummyReq, Opts2),
              fail
          catch
              throw:module_option_missing -> ok
          end.
 
 init_with_module_option(_Config) ->
+    DummyReq = #http_req{},
     ok = try
              Opts = [{module, dummy_handler}],
-             lasse_handler:init({}, {}, Opts),
+             lasse_handler:init({}, DummyReq, Opts),
              fail
          catch
-             error:function_clause -> ok
+             error:undef -> ok % cowboy will generate undef error when sending.
          end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
