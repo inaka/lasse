@@ -7,7 +7,9 @@
 * [canillita's handler](/canillita/blob/master/src/canillita_news_handler.erl) (as a reference)
 
 ### How to use it
-``lasse`` provides a [cowboy loop handler](http://ninenines.eu/docs/en/cowboy/HEAD/guide/loop_handlers/) called ``lasse_handler`` that describes a behaviour. To include it in your server routes, just add the following tuple to your [dispatch routes](http://ninenines.eu/docs/en/cowboy/HEAD/guide/routing/):
+``lasse`` provides a [cowboy loop handler](http://ninenines.eu/docs/en/cowboy/HEAD/guide/loop_handlers/)
+called ``lasse_handler`` that describes a behaviour. To include it in your server routes, just add
+the following tuple to your [dispatch routes](http://ninenines.eu/docs/en/cowboy/HEAD/guide/routing/):
 
 ```erlang
 {<<"/your/[:route]">>, lasse_handler, [your_module]}
@@ -15,13 +17,22 @@
 {<<"/your/[:route]">>, lasse_handler, [{module, your_module}, {init_args, Args}]}
 ```
 
-Specifying the ``module`` (e.g ``your_module``) is mandatory while providing a value for ``init_args`` is optional.
+Specifying the ``module`` (e.g ``your_module``) is mandatory while providing a value for ``init_args``
+is optional.
 
-Additionally, in your module, you have to implement the ``lasse_handler`` behaviour and its [callbacks](#callbacks):
+Additionally, in your module, you have to implement the ``lasse_handler`` behaviour and its
+[callbacks](#callbacks):
 
 ```erlang
 -behaviour(lasse_handler).
 ```
+
+#### Examples
+
+You can find some example applications that implement the ``lasse_handler`` in the ``examples`` folder.
+
+Running the examples is as simple as executing ``make run``, given you have the ``make`` tool
+and ``erlang`` installed in your environment.
 
 <a name="callbacks"></a>
 #### Callbacks
