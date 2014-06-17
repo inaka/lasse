@@ -95,7 +95,6 @@ notify(Pid, Msg) ->
 terminate(Reason, Req, State) ->
     Module = State#state.module,
     ModuleState = State#state.state,
-    lager:info("Terminating module: ~p", [Module]),
     Module:terminate(Reason, Req, ModuleState),
     ok.
 
