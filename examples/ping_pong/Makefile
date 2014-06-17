@@ -15,7 +15,7 @@ CONFIG ?= "rel/sys.config"
 RUN = erl -pa ebin -pa deps/*/ebin -smp enable -s sync -config ${CONFIG}
 NODE = ${PROJECT}
 
-run: app
+run: all
 	if [ -n "${NODE}" ]; then ${RUN} -name ${NODE}@`hostname` -s ${PROJECT}; \
 	else ${RUN} -s ${PROJECT}; \
 	fi
