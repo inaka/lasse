@@ -93,5 +93,5 @@ Types:
 
 <a name="result_type"></a>
 ##### result() = {'send', Event :: event(), NewState :: any()}
-    | {'nosend', NewState :: any()} |
+    | {'nosend', NewState :: any()}
     | {'stop', NewState :: any()}

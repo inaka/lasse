@@ -2,14 +2,14 @@
 -behavior(lasse_handler).
 
 -export([
-         init/2,
+         init/3,
          handle_notify/2,
          handle_info/2,
          handle_error/3,
          terminate/3
         ]).
 
-init(_InitArgs, Req) ->
+init(_InitArgs, _LastEventId, Req) ->
     % Take process name from the "process-name" header.
     {Headers, _} = cowboy_req:headers(Req),
     case lists:keyfind(<<"process-name">>, 1, Headers) of
@@ -41,6 +41,12 @@ handle_notify(no_data, State) ->
     {send, Event, State};
 handle_notify(nosend, State) ->
     {nosend, State};
+handle_notify(comments, State) ->
+    Event = [
+             {comments, <<"Comment 1\nComment 2">>},
+             {data, <<"some data">>}
+            ],
+    {send, Event, State};
 handle_notify(stop, State) ->
     {stop, State}.
 

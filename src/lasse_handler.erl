@@ -4,8 +4,11 @@
 -export([
          init/3,
          info/3,
-         notify/2,
          terminate/3
+        ]).
+
+-export([
+         notify/2
         ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,7 +38,7 @@
     {'nosend', NewState :: any()} |
     {'stop', NewState :: any()}.
 
--callback init(InitArgs :: any(), Req :: cowboy_req:req()) ->
+-callback init(InitArgs :: any(), LastEvtId :: any(), Req :: cowboy_req:req()) ->
     {ok, NewReq :: cowboy_req:req(), State :: any()} |
     {
       shutdown, 
@@ -74,8 +77,8 @@ init(_Transport, Req, Opts) ->
                  _ -> throw(module_option_missing)
              end,
     InitArgs = get_value(init_args, Opts, []),
-
-    InitResult = Module:init(InitArgs, Req),
+    LastEventId = last_event_id(Req),
+    InitResult = Module:init(InitArgs, LastEventId, Req),
     handle_init(InitResult, Module).
 
 info({message, Msg}, Req, State) ->
@@ -89,14 +92,18 @@ info(Msg, Req, State) ->
     Result = Module:handle_info(Msg, ModuleState),
     process_result(Result, Req, State).
 
-notify(Pid, Msg) ->
-    Pid ! {message, Msg}.
-
 terminate(Reason, Req, State) ->
     Module = State#state.module,
     ModuleState = State#state.state,
     Module:terminate(Reason, Req, ModuleState),
     ok.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% API 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+notify(Pid, Msg) ->
+    Pid ! {message, Msg}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Helper functions
@@ -117,6 +124,10 @@ handle_init({ok, Req, State}, Module) ->
             cowboy_req:reply(StatusCode, Headers, Req),
             {shutdown, Req, #state{module = Module}}
     end;
+handle_init({no_content, NewReq}, Module) ->
+    cowboy_req:reply(204, [], NewReq),
+
+    {shutdown, NewReq, #state{module = Module}};
 handle_init({shutdown, StatusCode, Headers, Body, NewReq}, Module) ->
     cowboy_req:reply(StatusCode, Headers, Body, NewReq),
 
@@ -151,11 +162,20 @@ get_value(Key, PropList, NotFound) ->
     end.
 
 build_event(Event) ->
-    [build_field(<<"id: ">>, get_value(id, Event)),
+    [build_comments(Event),
+     build_field(<<"id: ">>, get_value(id, Event)),
      build_field(<<"event: ">>, get_value(name, Event)),
      build_data(get_value(data, Event)),
      build_field(<<"retry: ">>, get_value(retry, Event)),
      <<"\n">>].
+
+build_comments(Event) ->
+    Keys = [id, data, name, retry],
+    Comments = lists:foldl(fun proplists:delete/2, Event, Keys),
+    [build_comment(Val) || {_, Val} <- Comments].
+
+build_comment(Comment) ->
+    [[<<": ">>, X, <<"\n">>] || X <- binary:split(Comment, <<"\n">>, [global])].
 
 build_field(_, undefined) ->
     [];
@@ -168,3 +188,13 @@ build_data(undefined) ->
     throw(data_required);
 build_data(Data) ->
     [[<<"data: ">>, X, <<"\n">>] || X <- binary:split(Data, <<"\n">>, [global])].
+
+last_event_id(Req) ->
+    {Headers, _} = cowboy_req:headers(Req),
+    Key = <<"last-event-id">>,
+    case lists:keyfind(Key, 1, Headers) of
+        {Key, Value} ->
+            Value;
+        _ ->
+            undefined
+    end.

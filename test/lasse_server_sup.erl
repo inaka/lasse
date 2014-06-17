@@ -21,7 +21,8 @@ start_listeners() ->
              [
               {<<"/">>, cowboy_static, {file, "test/index.html"}},
               {<<"/events">>, lasse_handler, [events_handler]},
-              {<<"/shutdown">>, lasse_handler, [shutdown_handler]}
+              {<<"/shutdown">>, lasse_handler, [shutdown_handler]},
+              {<<"/no_content">>, lasse_handler, [no_content_handler]}
              ]
             }
           ]),

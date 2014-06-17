@@ -1,4 +1,4 @@
--module(dummy_handler).
+-module(no_content_handler).
 -behavior(lasse_handler).
 
 -export([
@@ -10,7 +10,7 @@
         ]).
 
 init(_InitArgs, _LastEventId, Req) ->
-    {ok, Req, {}}.
+    {no_content, Req}.
 
 handle_info(_, _) ->
     does_not_matter.

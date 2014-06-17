@@ -14,7 +14,9 @@
          send_and_receive_two_chunks/1,
          send_and_do_not_receive_anything/1,
          send_data_and_id/1,
+         send_comments_and_data/1,
          do_not_send_data/1,
+         check_no_content/1,
          send_post_and_fail/1,
          cause_chunk_to_fail/1,
          shutdown_check_response/1,
@@ -36,7 +38,9 @@ all() ->
      send_and_receive_two_chunks,
      send_and_do_not_receive_anything,
      send_data_and_id,
+     send_comments_and_data,
      do_not_send_data,
+     check_no_content,
      send_post_and_fail,
      cause_chunk_to_fail,
      shutdown_check_response,
@@ -118,11 +122,26 @@ send_data_and_id(_Config) ->
     lasse_handler:notify(ProcName, stop),
     lasse_client:close(Pid).
 
-do_not_send_data(_Config) ->
+send_comments_and_data(_Config) ->
     Pid = open_conn(),
     ProcName = ?current_function(),
     get(Pid, ProcName, "/events"),
 
+    lasse_handler:notify(ProcName, comments),
+    Chunk = <<
+              ": Comment 1\n",
+              ": Comment 2\n",
+              "data: some data\n\n"
+            >>,
+    check_response(Pid, {chunk, Chunk}),
+
+    lasse_handler:notify(ProcName, stop),
+    lasse_client:close(Pid).
+
+do_not_send_data(_Config) ->
+    Pid = open_conn(),
+    ProcName = ?current_function(),
+    get(Pid, ProcName, "/events"),
     lasse_handler:notify(ProcName, no_data),
     ok = try
              check_response(Pid, {chunk, <<"id: 1\ndata: notify chunk\n\n">>}),
@@ -142,6 +161,15 @@ send_post_and_fail(_Config) ->
 
     lasse_client:close(Pid).
 
+check_no_content(_Config) ->
+    Pid = open_conn(),
+    ProcName = ?current_function(),
+
+    post(Pid, ProcName, "/no_content"),
+    check_response(Pid, {no_response, 204}),
+
+    lasse_client:close(Pid).
+
 cause_chunk_to_fail(_Config) ->
     try
         Req = {},
@@ -153,7 +181,6 @@ cause_chunk_to_fail(_Config) ->
     after
         catch meck:unload(cowboy_req)
     end.
-
 
 shutdown_check_response(_Config) ->
     Pid = open_conn(),
@@ -181,16 +208,17 @@ init_without_module_option(_Config) ->
 
 init_with_module_option(_Config) ->
     try
-        Req = {},
+        Request = {},
         State = {state, dummy_handler, {}},
 
         meck:new(cowboy_req, [passthrough]),
         meck:expect(cowboy_req, method, fun(Req) -> {<<"GET">>, Req} end),
         ChunkedReply = fun(_, _, Req) -> {ok, Req} end,
         meck:expect(cowboy_req, chunked_reply, ChunkedReply),
+        meck:expect(cowboy_req, headers, fun(Req) -> {[], Req} end),
 
         Opts = [{module, dummy_handler}],
-        {loop, Req, State} = lasse_handler:init({}, {}, Opts)
+        {loop, Request, State} = lasse_handler:init({}, {}, Opts)
     after
         catch meck:unload(cowboy_req)
     end.
