@@ -1,0 +1,32 @@
+<script>
+function append(event) {
+  var p = document.createElement("p");
+  var text = document.createTextNode(event.data + "\n");
+  p.appendChild(text);
+  document.body.appendChild(p);
+};
+
+var sourceEvt = undefined;
+
+function create() {
+  sourceEvt = new EventSource('/pong');
+  sourceEvt.onmessage = append;
+};
+
+function httpGet(url)
+{
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.open("GET", url, false);
+  xmlHttp.send("ping");
+  return xmlHttp.responseText;
+};
+
+function ping() {
+  httpGet("/ping");
+};
+
+create();
+</script>
+<body>
+<button id='ping' onclick='ping()'>Ping</button>
+</body>
