@@ -16,8 +16,9 @@
          send_data_and_id/1,
          send_comments_and_data/1,
          do_not_send_data/1,
-         check_no_content/1,
          send_post_and_fail/1,
+         check_no_content/1,
+         send_last_event_id_and_check_response/1,
          cause_chunk_to_fail/1,
          shutdown_check_response/1,
          init_without_module_option/1,
@@ -40,8 +41,9 @@ all() ->
      send_data_and_id,
      send_comments_and_data,
      do_not_send_data,
-     check_no_content,
      send_post_and_fail,
+     check_no_content,
+     send_last_event_id_and_check_response,
      cause_chunk_to_fail,
      shutdown_check_response,
      init_without_module_option,
@@ -165,8 +167,26 @@ check_no_content(_Config) ->
     Pid = open_conn(),
     ProcName = ?current_function(),
 
-    post(Pid, ProcName, "/no_content"),
+    ok = try
+             get(Pid, ProcName, "/no_content"),
+             fail
+         catch
+             error:timeout_while_waiting -> ok
+         end,
+
     check_response(Pid, {no_response, 204}),
+
+    lasse_client:close(Pid).
+
+send_last_event_id_and_check_response(_Config) ->
+    Pid = open_conn(),
+    ProcName = ?current_function(),
+
+    LastEventId = <<"42">>,
+    get(Pid, ProcName, "/events", [{<<"last-event-id">>, LastEventId}]),
+
+    lasse_handler:notify(ProcName, last_event_id),
+    check_response(Pid, {chunk, <<"data: ", LastEventId/binary, "\n\n">>}),
 
     lasse_client:close(Pid).
 
@@ -234,9 +254,13 @@ open_conn() ->
     {ok, Pid} = lasse_client:connect(Host, Port),
     Pid.
 
--spec get(Pid :: pid(), Name :: atom(), Url :: string()) -> ok.
 get(Pid, Name, Url) ->
-    Headers = [{<<"process-name">>, term_to_binary(Name)}],
+    get(Pid, Name, Url, []).
+
+-spec get(Pid :: pid(), Name :: atom(),
+          Url :: string(), Header :: [{binary(), binary()}]) -> ok.
+get(Pid, Name, Url, HeadersArg) ->
+    Headers = [{<<"process-name">>, term_to_binary(Name)}] ++ HeadersArg,
     ok = lasse_client:start_get(Pid, Url, Headers),
 
     Fun = fun() -> whereis(Name) =/= undefined end,

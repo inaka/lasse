@@ -9,7 +9,7 @@
          terminate/3
         ]).
 
-init(_InitArgs, _LastEventId, Req) ->
+init(_InitArgs, LastEventId, Req) ->
     % Take process name from the "process-name" header.
     {Headers, _} = cowboy_req:headers(Req),
     case lists:keyfind(<<"process-name">>, 1, Headers) of
@@ -22,7 +22,7 @@ init(_InitArgs, _LastEventId, Req) ->
             ok
     end,
 
-    {ok, Req, {}}.
+    {ok, Req, LastEventId}.
 
 handle_notify(send, State) ->
     {send, [{data, <<"notify chunk">>}], State};
@@ -46,6 +46,9 @@ handle_notify(comments, State) ->
              {comments, <<"Comment 1\nComment 2">>},
              {data, <<"some data">>}
             ],
+    {send, Event, State};
+handle_notify(last_event_id, State) ->
+    Event = [{data, State}],
     {send, Event, State};
 handle_notify(stop, State) ->
     {stop, State}.
