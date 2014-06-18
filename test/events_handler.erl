@@ -11,13 +11,12 @@
 
 init(_InitArgs, LastEventId, Req) ->
     % Take process name from the "process-name" header.
-    {Headers, _} = cowboy_req:headers(Req),
-    case lists:keyfind(<<"process-name">>, 1, Headers) of
-        {<<"process-name">>, ProcNameBin} ->
+    case cowboy_req:header(<<"process-name">>, Req) of
+        {ProcNameBin, Req} ->
             ProcName = binary_to_term(ProcNameBin),
             register(ProcName, self()),
-            lager:info("Initiating an ~p in ~p", [ProcName, whereis(ProcName)]);
-        _ ->
+            lager:info("Initiating a ~p in ~p", [ProcName, whereis(ProcName)]);
+        {undefined, Req}  ->
             lager:info("Initiating handler"),
             ok
     end,
