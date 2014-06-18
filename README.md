@@ -34,17 +34,31 @@ You can find some example applications that implement the ``lasse_handler`` in t
 Running the examples is as simple as executing ``make run``, given you have the ``make`` tool
 and ``erlang`` installed in your environment.
 
+#### API
+
+##### notify(Pid, Message) -> ok
+
+Used to send in-band messages to the handler given its Pid.
+
+Types:
+- Pid = pid()
+- Message = any()
+
 <a name="callbacks"></a>
 #### Callbacks
 
-##### init(InitArgs, Req) -> {ok, NewReq, State} | {shutdown, StatusCode, Headers, Body, NewReq}
+##### init(InitArgs, LastEventId, Req) -> {ok, NewReq, State} | {no_content, NewReq} | {shutdown, StatusCode, Headers, Body, NewReq}
 
-Will be called upon initialization of the handler, if everything goes well it should return
-``{ok, NewReq, State}``, otherwise ``{shutdown, StatusCode, Headers, Body, NewReq}`` which will
-cause the handler to reply to the client with the information supplied and then terminate.
+Will be called upon initialization of the handler, receiving the value of the ``"last-event-id"`` header
+if there is one and ``undefined`` otherwise. If everything goes well it should return
+``{ok, NewReq, State}`` to leave the connection open. In case the handler has no content to deliver
+it should return ``{no_content, NewReq}`` and the client will receive a response with a status code ``204 No Content``.
+A custom response can be provided for other scenarios by returning ``{shutdown, StatusCode, Headers, Body, NewReq}``,
+which will cause the handler to reply to the client with the information supplied and then terminate.
 
 Types:
-- InitiArgs = any()
+- InitArgs = any()
+- LastEventId = binary() | undefined
 - Req = cowboy_req:req()
 - NewReq = cowboy_req:req()
 - State = any()
@@ -93,5 +107,16 @@ Types:
 
 <a name="result_type"></a>
 ##### result() = {'send', Event :: event(), NewState :: any()}
-    | {'nosend', NewState :: any()} |
+    | {'nosend', NewState :: any()}
     | {'stop', NewState :: any()}
+
+##### event() = [event_value(), ...]
+
+The field 'data' is required for every event returned by ``handle_notify()`` and ``hanfle_info()``,
+if one is not supplied a ``data_required`` will be thrown.
+
+##### event_value() :: {'id', binary()}
+    | {'event', binary()}
+    | {'data', binary()}
+    | {'retry', binary()}
+    | {'comment', binary()}
