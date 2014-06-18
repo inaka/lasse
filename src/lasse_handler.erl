@@ -40,7 +40,7 @@
 
 -callback init(InitArgs :: any(), LastEvtId :: any(), Req :: cowboy_req:req()) ->
     {ok, NewReq :: cowboy_req:req(), State :: any()} |
-    {no_content, NewReq} |
+    {no_content, NewReq :: cowboy_req:req()} |
     {
       shutdown, 
       StatusCode :: cowboy:http_status(), 
@@ -78,7 +78,7 @@ init(_Transport, Req, Opts) ->
                  _ -> throw(module_option_missing)
              end,
     InitArgs = get_value(init_args, Opts, []),
-    LastEventId = last_event_id(Req),
+    {LastEventId, Req} = cowboy_req:header(<<"last-event-id">>, Req),
     InitResult = Module:init(InitArgs, LastEventId, Req),
     handle_init(InitResult, Module).
 
@@ -190,13 +190,3 @@ build_data(undefined) ->
     throw(data_required);
 build_data(Data) ->
     [[<<"data: ">>, X, <<"\n">>] || X <- binary:split(Data, <<"\n">>, [global])].
-
-last_event_id(Req) ->
-    {Headers, _} = cowboy_req:headers(Req),
-    Key = <<"last-event-id">>,
-    case lists:keyfind(Key, 1, Headers) of
-        {Key, Value} ->
-            Value;
-        _ ->
-            undefined
-    end.

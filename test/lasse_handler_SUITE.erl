@@ -235,7 +235,7 @@ init_with_module_option(_Config) ->
         meck:expect(cowboy_req, method, fun(Req) -> {<<"GET">>, Req} end),
         ChunkedReply = fun(_, _, Req) -> {ok, Req} end,
         meck:expect(cowboy_req, chunked_reply, ChunkedReply),
-        meck:expect(cowboy_req, headers, fun(Req) -> {[], Req} end),
+        meck:expect(cowboy_req, header, fun(_, Req) -> {undefined, Req} end),
 
         Opts = [{module, dummy_handler}],
         {loop, Request, State} = lasse_handler:init({}, {}, Opts)
