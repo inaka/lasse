@@ -40,6 +40,7 @@
 
 -callback init(InitArgs :: any(), LastEvtId :: any(), Req :: cowboy_req:req()) ->
     {ok, NewReq :: cowboy_req:req(), State :: any()} |
+    {no_content, NewReq} |
     {
       shutdown, 
       StatusCode :: cowboy:http_status(), 
