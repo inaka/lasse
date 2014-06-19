@@ -47,13 +47,15 @@ Types:
 <a name="callbacks"></a>
 #### Callbacks
 
-##### init(InitArgs, LastEventId, Req) -> {ok, NewReq, State} | {no_content, NewReq} | {shutdown, StatusCode, Headers, Body, NewReq}
+##### init(InitArgs, LastEventId, Req) -> {ok, NewReq, State}
+    | {no_content, NewReq, State}
+    | {shutdown, StatusCode, Headers, Body, NewReq, State}
 
 Will be called upon initialization of the handler, receiving the value of the ``"last-event-id"`` header
 if there is one and ``undefined`` otherwise. If everything goes well it should return
 ``{ok, NewReq, State}`` to leave the connection open. In case the handler has no content to deliver
-it should return ``{no_content, NewReq}`` and the client will receive a response with a status code ``204 No Content``.
-A custom response can be provided for other scenarios by returning ``{shutdown, StatusCode, Headers, Body, NewReq}``,
+it should return ``{no_content, NewReq, State}`` and the client will receive a response with a status code ``204 No Content``.
+A custom response can be provided for other scenarios by returning ``{shutdown, StatusCode, Headers, Body, NewReq, State}``,
 which will cause the handler to reply to the client with the information supplied and then terminate.
 
 Types:
@@ -115,7 +117,7 @@ Types:
 The field 'data' is required for every event returned by ``handle_notify()`` and ``hanfle_info()``,
 if one is not supplied a ``data_required`` will be thrown.
 
-##### event_value() :: {'id', binary()}
+##### event_value() = {'id', binary()}
     | {'event', binary()}
     | {'data', binary()}
     | {'retry', binary()}

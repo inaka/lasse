@@ -10,7 +10,7 @@
         ]).
 
 init(_InitArgs, _LastEventId, Req) ->
-    {no_content, Req}.
+    {no_content, Req, {}}.
 
 handle_info(_, _) ->
     does_not_matter.
