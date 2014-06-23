@@ -126,14 +126,14 @@ handle_init({ok, Req, State}, Module) ->
             cowboy_req:reply(StatusCode, Headers, Req),
             {shutdown, Req, #state{module = Module}}
     end;
-handle_init({no_content, NewReq}, Module) ->
+handle_init({no_content, NewReq, State}, Module) ->
     cowboy_req:reply(204, [], NewReq),
 
-    {shutdown, NewReq, #state{module = Module}};
-handle_init({shutdown, StatusCode, Headers, Body, NewReq}, Module) ->
+    {shutdown, NewReq, #state{module = Module, state = State}};
+handle_init({shutdown, StatusCode, Headers, Body, NewReq, State}, Module) ->
     cowboy_req:reply(StatusCode, Headers, Body, NewReq),
 
-    {shutdown, NewReq, #state{module = Module}}.
+    {shutdown, NewReq, #state{module = Module, state = State}}.
 
 process_result({send, Event, NewState}, Req, State) ->
     EventMsg = build_event(Event),
