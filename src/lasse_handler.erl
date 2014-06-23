@@ -112,12 +112,19 @@ notify(Pid, Msg) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 handle_init({ok, Req, State}, Module) ->
+    handle_init({ok, Req, [], State}, Module);
+handle_init({ok, Req, InitialEvents, State}, Module) ->
     case cowboy_req:method(Req) of
         {<<"GET">>, Req1} ->
             % "no-cache recommended to prevent caching of event data.
             Headers = [{<<"content-type">>, <<"text/event-stream">>},
                        {<<"cache-control">>, <<"no-cache">>}],
             {ok, Req2} = cowboy_req:chunked_reply(200, Headers, Req1),
+
+            lists:foreach(
+              fun(Event) -> ok = send_event(Event, Req2) end,
+              InitialEvents
+             ),
 
             {loop, Req2, #state{module = Module, state = State}};
         {_OtherMethod, _} ->
@@ -136,13 +143,12 @@ handle_init({shutdown, StatusCode, Headers, Body, NewReq, State}, Module) ->
     {shutdown, NewReq, #state{module = Module, state = State}}.
 
 process_result({send, Event, NewState}, Req, State) ->
-    EventMsg = build_event(Event),
-    case cowboy_req:chunk(EventMsg, Req) of
+    case send_event(Event, Req) of
         {error, Reason} ->
             Module = State#state.module,
             ModuleState = State#state.state,
-            NewModuleState = Module:handle_error(EventMsg, Reason, ModuleState),
-            {ok, Req, State#state{module = NewModuleState}};
+            ErrorNewState = Module:handle_error(Event, Reason, ModuleState),
+            {ok, Req, State#state{module = ErrorNewState}};
         ok ->
             {loop, Req, State#state{state = NewState}}
     end;
@@ -162,6 +168,10 @@ get_value(Key, PropList, NotFound) ->
         undefined -> NotFound;
         Value -> Value
     end.
+
+send_event(Event, Req) ->
+    EventMsg = build_event(Event),
+    cowboy_req:chunk(EventMsg, Req).
 
 build_event(Event) ->
     [build_comments(Event),
