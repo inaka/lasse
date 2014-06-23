@@ -1,12 +1,17 @@
-# lasse
-## SSE handler for Cowboy
+# Lasse
+
+<img src="http://i61.tinypic.com/40pkl.jpg" align="right" style="float:right" height="400" />
+
+SSE handler for Cowboy.
 
 ### References
+
 * [Cowboy](/extend/cowboy)
 * [SSE](http://dev.w3.org/html5/eventsource/)
 * [canillita's handler](/canillita/blob/master/src/canillita_news_handler.erl) (as a reference)
 
-### How to use it
+### Usage
+
 ``lasse`` provides a [cowboy loop handler](http://ninenines.eu/docs/en/cowboy/HEAD/guide/loop_handlers/)
 called ``lasse_handler`` that describes a behaviour. To include it in your server routes, just add
 the following tuple to your [dispatch routes](http://ninenines.eu/docs/en/cowboy/HEAD/guide/routing/):
@@ -27,38 +32,44 @@ Additionally, in your module, you have to implement the ``lasse_handler`` behavi
 -behaviour(lasse_handler).
 ```
 
-#### Examples
+### Examples
 
 You can find some example applications that implement the ``lasse_handler`` in the ``examples`` folder.
 
-Running the examples is as simple as executing ``make run``, given you have the ``make`` tool
+Running the examples is as simple as executing ``make run``, given you have the ``make`` tool, ``git``
 and ``erlang`` installed in your environment.
 
-#### API
+## API
 
-##### notify(Pid, Message) -> ok
+### notify(Pid, Message) -> ok
 
 Used to send in-band messages to the handler given its Pid.
 
 Types:
+
 - Pid = pid()
 - Message = any()
 
 <a name="callbacks"></a>
-#### Callbacks
+## Callbacks
 
-##### init(InitArgs, LastEventId, Req) -> {ok, NewReq, State}
+### init(InitArgs, LastEventId, Req) -> {ok, NewReq, State}
+    | {ok, NewReq, InitialEvents, State}
     | {no_content, NewReq, State}
     | {shutdown, StatusCode, Headers, Body, NewReq, State}
 
 Will be called upon initialization of the handler, receiving the value of the ``"last-event-id"`` header
-if there is one and ``undefined`` otherwise. If everything goes well it should return
-``{ok, NewReq, State}`` to leave the connection open. In case the handler has no content to deliver
-it should return ``{no_content, NewReq, State}`` and the client will receive a response with a status code ``204 No Content``.
-A custom response can be provided for other scenarios by returning ``{shutdown, StatusCode, Headers, Body, NewReq, State}``,
-which will cause the handler to reply to the client with the information supplied and then terminate.
+if there is one or ``undefined`` otherwise. If everything goes well it should return
+``{ok, NewReq, State}`` to leave the connection open or ``{ok, NewReq, InitialEvents, State}`` if there are
+any ``InitialEvents`` that need to ben sent before the handler enters its loop.
+
+In case the handler has no content to deliver it should return ``{no_content, NewReq, State}`` and the client
+will receive a response with a status code ``204 No Content``. A custom response can be provided for other
+scenarios by returning ``{shutdown, StatusCode, Headers, Body, NewReq, State}``, which will cause the handler
+to reply to the client with the information supplied and then terminate.
 
 Types:
+
 - InitArgs = any()
 - LastEventId = binary() | undefined
 - Req = cowboy_req:req()
@@ -68,56 +79,60 @@ Types:
 - Headers = cowboy:http_headers()
 - Body = iodata()
 
-##### handle_notify(Msg, State) -> Result
+### handle_notify(Msg, State) -> Result
 
 Receives and processes in-band messages sent through the ``lasse_handler:notify/2`` function.
 
 Types:
+
 - Msg = any()
 - State = any()
 - Result = [result()](#result_type)
 
-##### handle_info(Msg, State) -> Result
+### handle_info(Msg, State) -> Result
 
 Receives and processes out-of-band messages sent directly to the handler's process.
 
 Types:
+
 - Msg = any()
 - State = any()
 - Result = [result()](#result_type)
 
-##### handle_error(Msg, Reason, State) -> NewState
+### handle_error(Msg, Reason, State) -> NewState
 
 If there's a problem while sending a chunk to the client, this function will be called after which the handler will terminate.
 
 Types:
+
 - Msg = any()
 - Reason = atom()
 - State = any()
 - NewState = any()
 
-##### terminate(Reason, Req, State) -> ok
+### terminate(Reason, Req, State) -> ok
 
 This function will be called before terminating the handler, its return value is ignored.
 
 Types:
+
 - Reason = atom()
 - Req = cowboy:http_headers()
 - State = any()
 
-#### Types
+## Types
 
 <a name="result_type"></a>
-##### result() = {'send', Event :: event(), NewState :: any()}
+### result() = {'send', Event :: event(), NewState :: any()}
     | {'nosend', NewState :: any()}
     | {'stop', NewState :: any()}
 
-##### event() = [event_value(), ...]
+### event() = [event_value(), ...]
 
-The field 'data' is required for every event returned by ``handle_notify()`` and ``hanfle_info()``,
-if one is not supplied a ``data_required`` will be thrown.
+The field ``data`` is required for every event returned by ``handle_notify()`` and ``hanfle_info()``,
+if none is supplied ``data_required`` will be thrown.
 
-##### event_value() = {'id', binary()}
+### event_value() = {'id', binary()}
     | {'event', binary()}
     | {'data', binary()}
     | {'retry', binary()}

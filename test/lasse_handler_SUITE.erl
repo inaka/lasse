@@ -13,6 +13,7 @@
 -export([
          send_and_receive_two_chunks/1,
          send_and_do_not_receive_anything/1,
+         send_and_receive_initial_events/1,
          send_data_and_id/1,
          send_comments_and_data/1,
          do_not_send_data/1,
@@ -38,6 +39,7 @@ all() ->
     [
      send_and_receive_two_chunks,
      send_and_do_not_receive_anything,
+     send_and_receive_initial_events,
      send_data_and_id,
      send_comments_and_data,
      do_not_send_data,
@@ -110,6 +112,15 @@ send_and_do_not_receive_anything(_Config) ->
          end,
 
     lasse_handler:notify(ProcName, stop),
+    lasse_client:close(Pid).
+
+send_and_receive_initial_events(_Config) ->
+    Pid = open_conn(),
+    get(Pid, undefined, "/initial-events"),
+
+    Chunk = <<"data: initial 1\n\n", "data: initial 2\n\n">>,
+    check_response(Pid, {chunk, Chunk}),
+
     lasse_client:close(Pid).
 
 send_data_and_id(_Config) ->
@@ -259,16 +270,25 @@ get(Pid, Name, Url) ->
 
 -spec get(Pid :: pid(), Name :: atom(),
           Url :: string(), Header :: [{binary(), binary()}]) -> ok.
-get(Pid, Name, Url, HeadersArg) ->
-    Headers = [{<<"process-name">>, term_to_binary(Name)}] ++ HeadersArg,
-    ok = lasse_client:start_get(Pid, Url, Headers),
+get(Pid, Name, Url, Headers) ->
+    NewHeaders = process_name(Headers, Name),
+    ok = lasse_client:start_get(Pid, Url, NewHeaders),
 
-    Fun = fun() -> whereis(Name) =/= undefined end,
-    wait_for(Fun, 100).
+    case Name of
+        undefined -> ok;
+        _ ->
+            Fun = fun() -> whereis(Name) =/= undefined end,
+            wait_for(Fun, 100)
+    end.
 
 post(Pid, Name, Url) ->
-    Headers = [{<<"process-name">>, term_to_binary(Name)}],
+    Headers = process_name([], Name),
     ok = lasse_client:start_post(Pid, Url, Headers).
+
+process_name(Headers, undefined) ->
+    Headers;
+process_name(Headers, Name) ->
+    [{<<"process-name">>, term_to_binary(Name)}] ++ Headers.
 
 %% @doc Checks if the function Fun evaluates to true every 10ms until
 %% it timeouts.
