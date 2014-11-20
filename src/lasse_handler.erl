@@ -148,7 +148,7 @@ process_result({send, Event, NewState}, Req, State) ->
             Module = State#state.module,
             ModuleState = State#state.state,
             ErrorNewState = Module:handle_error(Event, Reason, ModuleState),
-            {ok, Req, State#state{module = ErrorNewState}};
+            {ok, Req, State#state{state = ErrorNewState}};
         ok ->
             {loop, Req, State#state{state = NewState}}
     end;
