@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/inaka/lasse.png?label=ready&title=Ready)](https://waffle.io/inaka/lasse)
 # Lasse
 
 <img src="http://i61.tinypic.com/40pkl.jpg" align="right" style="float:right" height="400" />
