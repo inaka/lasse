@@ -19,49 +19,32 @@
          do_not_send_data/1,
          send_post_and_fail/1,
          check_no_content/1,
-         send_last_event_id_and_check_response/1,
+         send_last_event_id/1,
          cause_chunk_to_fail/1,
-         shutdown_check_response/1,
+         shutdown/1,
          init_without_module_option/1,
          init_with_module_option/1
         ]).
-
--define(current_function(),
-        element(2, element(2, process_info(self(), current_function)))).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Common test functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @private
 -spec all() -> [atom()].
 all() ->
-    [
-     send_and_receive_two_chunks,
-     send_and_do_not_receive_anything,
-     send_and_receive_initial_events,
-     send_data_and_id,
-     send_comments_and_data,
-     do_not_send_data,
-     send_post_and_fail,
-     check_no_content,
-     send_last_event_id_and_check_response,
-     cause_chunk_to_fail,
-     shutdown_check_response,
-     init_without_module_option,
-     init_with_module_option
-    ].
+    ExcludedFuns = [module_info, init_per_suite, end_per_suite, group],
+    [F || {F, 1} <- module_info(exports), not lists:member(F, ExcludedFuns)].
 
 -spec init_per_suite(config()) -> config().
 init_per_suite(Config) ->
-    {ok, _Started} = application:ensure_all_started(lasse_server),
-
+    {ok, [_|_]} = application:ensure_all_started(lasse_server),
+    {ok, [_|_]} = application:ensure_all_started(shotgun),
     Config.
 
 -spec end_per_suite(config()) -> config().
 end_per_suite(Config) ->
     application:stop(lasse_server),
-
+    application:stop(shotgun),
     Config.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,133 +56,107 @@ send_and_receive_two_chunks(_Config) ->
     % since doing it in init_per_suite and
     % providing the resulting Pid doesn't work.'
     Pid = open_conn(),
-    ProcName = ?current_function(),
+    ProcName = send_and_receive_two_chunks,
     get(Pid, ProcName, "/events"),
 
     % first chunk
     lasse_handler:notify(ProcName, send),
-    check_response(Pid, {chunk, <<"data: notify chunk\n\n">>}),
+    [#{data := [<<"notify chunk">>]}] = get_events(Pid),
 
     % second chunk
     ProcName ! send,
-    check_response(Pid, {chunk, <<"data: info chunk\n\n">>}),
+    [#{data := [<<"info chunk">>]}] = get_events(Pid),
 
     lasse_handler:notify(ProcName, stop),
-    lasse_client:close(Pid).
+    close_conn(Pid).
 
 send_and_do_not_receive_anything(_Config) ->
     Pid = open_conn(),
-    ProcName = ?current_function(),
+    ProcName = send_and_do_not_receive_anything,
     get(Pid, ProcName, "/events"),
 
     % first chunk
     lasse_handler:notify(ProcName, nosend),
-
-    ok = try
-             check_response(Pid, {chunk, <<"data: notify chunk\n\n">>}),
-             fail
-         catch
-             error:timeout_while_waiting -> ok
-         end,
+    ok = get_no_events(Pid),
 
     % second chunk
     ProcName ! nosend,
-    ok = try
-             check_response(Pid, {chunk, <<"data: info chunk\n\n">>}),
-             fail
-         catch
-             error:timeout_while_waiting -> ok
-         end,
+    ok = get_no_events(Pid),
 
     lasse_handler:notify(ProcName, stop),
-    lasse_client:close(Pid).
+    close_conn(Pid).
 
 send_and_receive_initial_events(_Config) ->
     Pid = open_conn(),
     get(Pid, undefined, "/initial-events"),
 
-    Chunk = <<"data: initial 1\n\n", "data: initial 2\n\n">>,
-    check_response(Pid, {chunk, Chunk}),
+    [
+        #{data := [<<"initial 1">>]},
+        #{data := [<<"initial 2">>]}
+    ] = get_events(Pid),
 
-    lasse_client:close(Pid).
+    close_conn(Pid).
 
 send_data_and_id(_Config) ->
     Pid = open_conn(),
-    ProcName = ?current_function(),
+    ProcName = send_data_and_id,
     get(Pid, ProcName, "/events"),
 
     lasse_handler:notify(ProcName, send_id),
-
-    check_response(Pid, {chunk, <<"id: 1\ndata: notify chunk\n\n">>}),
+    [#{id := <<"1">>, data := [<<"notify chunk">>]}] = get_events(Pid),
 
     lasse_handler:notify(ProcName, stop),
-    lasse_client:close(Pid).
+    close_conn(Pid).
 
 send_comments_and_data(_Config) ->
     Pid = open_conn(),
-    ProcName = ?current_function(),
+    ProcName = send_comments_and_data,
     get(Pid, ProcName, "/events"),
 
     lasse_handler:notify(ProcName, comments),
     Chunk = <<
               ": Comment 1\n",
               ": Comment 2\n",
-              "data: some data\n\n"
+              "data: some data"
             >>,
-    check_response(Pid, {chunk, Chunk}),
+    [{_, _, Chunk}] = get_raw_events(Pid),
 
     lasse_handler:notify(ProcName, stop),
-    lasse_client:close(Pid).
+    close_conn(Pid).
 
 do_not_send_data(_Config) ->
     Pid = open_conn(),
-    ProcName = ?current_function(),
+    ProcName = do_not_send_data,
     get(Pid, ProcName, "/events"),
     lasse_handler:notify(ProcName, no_data),
-    ok = try
-             check_response(Pid, {chunk, <<"id: 1\ndata: notify chunk\n\n">>}),
-             fail
-         catch
-             error:timeout_while_waiting -> ok
-         end,
-
-    lasse_client:close(Pid).
+    ok = get_no_events(Pid),
+    close_conn(Pid).
 
 send_post_and_fail(_Config) ->
     Pid = open_conn(),
-    ProcName = ?current_function(),
+    ProcName = send_post_and_fail,
 
-    post(Pid, ProcName, "/events"),
-    check_response(Pid, {no_response, 405}),
+    #{status_code := 405} = post(Pid, ProcName, "/events"),
 
-    lasse_client:close(Pid).
+    close_conn(Pid).
 
 check_no_content(_Config) ->
     Pid = open_conn(),
-    ProcName = ?current_function(),
 
-    ok = try
-             get(Pid, ProcName, "/no_content"),
-             fail
-         catch
-             error:timeout_while_waiting -> ok
-         end,
+    #{status_code := 204} = raw_get(Pid, "/no_content"),
 
-    check_response(Pid, {no_response, 204}),
+    close_conn(Pid).
 
-    lasse_client:close(Pid).
-
-send_last_event_id_and_check_response(_Config) ->
+send_last_event_id(_Config) ->
     Pid = open_conn(),
-    ProcName = ?current_function(),
+    ProcName = send_last_event_id,
 
-    LastEventId = <<"42">>,
-    get(Pid, ProcName, "/events", [{<<"last-event-id">>, LastEventId}]),
+    get(Pid, ProcName, "/events", #{<<"last-event-id">> => <<"42">>}),
 
     lasse_handler:notify(ProcName, last_event_id),
-    check_response(Pid, {chunk, <<"data: ", LastEventId/binary, "\n\n">>}),
+    [#{data := [<<"42">>]}] = get_events(Pid),
 
-    lasse_client:close(Pid).
+    close_conn(Pid).
 
 cause_chunk_to_fail(_Config) ->
     try
@@ -213,13 +170,18 @@ cause_chunk_to_fail(_Config) ->
         catch meck:unload(cowboy_req)
     end.
 
-shutdown_check_response(_Config) ->
+shutdown(_Config) ->
     Pid = open_conn(),
 
-    ok = lasse_client:start_get(Pid, "/shutdown"),
-    check_response(Pid, {response, <<"Sorry, shutdown!">>}),
+    #{status_code := 404,
+             body := <<"Sorry, shutdown!">>} = raw_get(Pid, "/shutdown"),
 
-    lasse_client:close(Pid).
+    {ok, _Ref} =
+        shotgun:get(Pid, "/shutdown", #{}, #{async => true, async_mode => sse}),
+
+    get_no_events(Pid),
+
+    close_conn(Pid).
 
 init_without_module_option(_Config) ->
     ok = try
@@ -258,55 +220,64 @@ init_with_module_option(_Config) ->
 %%% Auxiliary functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec open_conn() -> pid().
 open_conn() ->
     {ok, Port} = application:get_env(cowboy, http_port),
-    Host = "localhost",
-    {ok, Pid} = lasse_client:connect(Host, Port),
+    {ok, Pid} = shotgun:open("localhost", Port),
     Pid.
 
-get(Pid, Name, Url) ->
-    get(Pid, Name, Url, []).
+close_conn(Pid) -> shotgun:close(Pid).
 
--spec get(Pid :: pid(), Name :: atom(),
-          Url :: string(), Header :: [{binary(), binary()}]) -> ok.
-get(Pid, Name, Url, Headers) ->
-    NewHeaders = process_name(Headers, Name),
-    ok = lasse_client:start_get(Pid, Url, NewHeaders),
+get(Pid, Name, Url) ->
+    get(Pid, Name, Url, #{}).
+
+-spec get(pid(), atom(), string(), map()) -> ok.
+get(Pid, Name, Uri, Headers) ->
+    NewHeaders = Headers#{<<"process-name">> => atom_to_binary(Name, utf8)},
+    {ok, _Ref} =
+        shotgun:get(Pid, Uri, NewHeaders, #{async => true, async_mode => sse}),
 
     case Name of
         undefined -> ok;
-        _ ->
-            Fun = fun() -> whereis(Name) =/= undefined end,
-            wait_for(Fun, 100)
+        Name ->
+            true =
+                ktn_task:wait_for(
+                    fun() -> whereis(Name) =/= undefined end,
+                    true)
     end.
+
+raw_get(Pid, Uri) ->
+    {ok, Response} = shotgun:get(Pid, Uri),
+    Response.
 
 post(Pid, Name, Url) ->
-    Headers = process_name([], Name),
-    ok = lasse_client:start_post(Pid, Url, Headers).
+    Headers = #{<<"process-name">> => atom_to_binary(Name, utf8)},
+    {ok, Response} = shotgun:post(Pid, Url, Headers, [], #{}),
+    Response.
 
-process_name(Headers, undefined) ->
-    Headers;
-process_name(Headers, Name) ->
-    [{<<"process-name">>, term_to_binary(Name)}] ++ Headers.
+get_events(Pid) ->
+    ktn_task:wait_for_success(
+        fun() ->
+            try
+                ct:pal("waiting for events at ~p", [self()]),
+                Events = shotgun:events(Pid),
+                ct:pal("Events: ~p", [Events]),
+                [_|_] = [shotgun:parse_event(Bin) || {_, _, Bin} <- Events]
+            catch
+                _:Error ->
+                    ct:pal("Failed: ~p", [Error]),
+                    throw(Error)
+            end
+        end).
 
-%% @doc Checks if the function Fun evaluates to true every 10ms until
-%% it timeouts.
-wait_for(Fun, Timeout) ->
-    SleepTime = 10,
-    Retries = Timeout div SleepTime,
-    wait_for(Fun, SleepTime, Retries).
+get_raw_events(Pid) ->
+    ktn_task:wait_for_success(
+        fun() ->
+            ct:pal("waiting for events at ~p", [self()]),
+            Events = shotgun:events(Pid),
+            ct:pal("Events: ~p", [Events]),
+            [_|_] = Events
+        end).
 
-wait_for(_Fun, _SleepTime, 0) ->
-    error(timeout_while_waiting);
-wait_for(Fun, SleepTime, Retries) ->
-    case Fun() of
-        true -> ok;
-        _ ->
-            timer:sleep(SleepTime),
-            wait_for(Fun, SleepTime, Retries - 1)
-    end.
-
-check_response(Pid, Response) ->
-    Fun = fun() -> Response =:= lasse_client:pop(Pid) end,
-    wait_for(Fun, 100).
+get_no_events(Pid) ->
+    {error, {timeout, {badmatch, []}}} = get_events(Pid),
+    ok.

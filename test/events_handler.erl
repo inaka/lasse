@@ -12,8 +12,8 @@
 init(_InitArgs, LastEventId, Req) ->
     % Take process name from the "process-name" header.
     case cowboy_req:header(<<"process-name">>, Req) of
-        {ProcNameBin, Req} ->
-            ProcName = binary_to_term(ProcNameBin),
+        {ProcNameBin, Req} when ProcNameBin =/= <<"undefined">> ->
+            ProcName = binary_to_atom(ProcNameBin, utf8),
             register(ProcName, self()),
             lager:info("Initiating a ~p in ~p", [ProcName, whereis(ProcName)]);
         {undefined, Req}  ->

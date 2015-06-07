@@ -15,7 +15,7 @@
 %% Records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--record(state, 
+-record(state,
         {
           module :: module(),
           state :: any()
@@ -25,10 +25,10 @@
 %% Behavior definition
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--type event_value() :: 
-        {'id', binary()} | 
-        {'event', binary()} | 
-        {'data', binary()} | 
+-type event_value() ::
+        {'id', binary()} |
+        {'event', binary()} |
+        {'data', binary()} |
         {'retry', binary()}.
 
 -type event() :: [event_value(), ...].
@@ -42,8 +42,8 @@
     {ok, NewReq :: cowboy_req:req(), State :: any()} |
     {no_content, NewReq :: cowboy_req:req()} |
     {
-      shutdown, 
-      StatusCode :: cowboy:http_status(), 
+      shutdown,
+      StatusCode :: cowboy:http_status(),
       Headers :: cowboy:http_headers(),
       Body :: iodata(),
       NewReq :: cowboy_req:req()
@@ -93,14 +93,14 @@ info(Msg, Req, State) ->
     Result = Module:handle_info(Msg, ModuleState),
     process_result(Result, Req, State).
 
-terminate(Reason, Req, State) ->
+terminate(Reason, Req, State = #state{}) ->
     Module = State#state.module,
     ModuleState = State#state.state,
     Module:terminate(Reason, Req, ModuleState),
     ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% API 
+%%% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 notify(Pid, Msg) ->

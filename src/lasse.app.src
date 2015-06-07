@@ -3,7 +3,8 @@
   [
    {description, "Lasse: Server-Sent Event handler for Cowboy."},
    {vsn, "0.2.0"},
-   {modules, [lasse_handler]},
-   {applications, [kernel, stdlib]}
+   {modules, []},
+   {applications, [kernel, stdlib]},
+   {registered, []}
   ]
 }.
