@@ -39,7 +39,7 @@
     {'nosend', NewState :: any()} |
     {'stop', NewState :: any()}.
 
--callback init(InitArgs :: any(), LastEvtId :: any(), Req :: cowboy_req:req()) ->
+-callback init(InitArgs::any(), LastEvtId::any(), Req::cowboy_req:req()) ->
     {ok, NewReq :: cowboy_req:req(), State :: any()} |
     {no_content, NewReq :: cowboy_req:req()} |
     {
@@ -204,4 +204,5 @@ build_field(Name, Value) ->
 build_data(undefined) ->
     throw(data_required);
 build_data(Data) ->
-    [[<<"data: ">>, X, <<"\n">>] || X <- binary:split(Data, <<"\n">>, [global])].
+    [[<<"data: ">>, X, <<"\n">>]
+    || X <- binary:split(Data, <<"\n">>, [global])].

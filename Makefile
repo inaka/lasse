@@ -5,7 +5,7 @@ CONFIG ?= rel/sys.config
 SELL_DEPS = sync
 TEST_DEPS = cowboy lager shotgun meck katana xref_runner
 
-dep_meck = https://github.com/eproxus/meck.git 0.8.2
+dep_meck = git https://github.com/eproxus/meck.git 0.8.2
 dep_cowboy = git https://github.com/extend/cowboy.git 1.0.1
 dep_shotgun = git https://github.com/inaka/shotgun.git 0.1.11
 dep_katana = git https://github.com/inaka/erlang-katana.git 0.2.5
