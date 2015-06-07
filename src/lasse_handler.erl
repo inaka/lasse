@@ -20,6 +20,7 @@
           module :: module(),
           state :: any()
         }).
+-type state() :: #state{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Behavior definition
@@ -70,7 +71,8 @@
 -type lasse_handler_option()  :: {'module', module()} | {'init_args', any()}.
 -type lasse_handler_options() :: [module()] | [lasse_handler_option(), ...].
 
--spec init(any(), any(), lasse_handler_options()) -> {loop, any(), record(state)}.
+-spec init(any(), cowboy_req:req(), lasse_handler_options()) ->
+    {loop, any(), state()}.
 init(_Transport, Req, Opts) ->
     Module = case get_value(module, Opts, Opts) of
                  Name when is_atom(Name) -> Name;
@@ -82,6 +84,8 @@ init(_Transport, Req, Opts) ->
     InitResult = Module:init(InitArgs, LastEventId, Req),
     handle_init(InitResult, Module).
 
+-spec info(term(), cowboy_req:req(), state()) ->
+    {ok|loop, cowboy_req:req(), state()}.
 info({message, Msg}, Req, State) ->
     Module = State#state.module,
     ModuleState = State#state.state,
@@ -93,6 +97,7 @@ info(Msg, Req, State) ->
     Result = Module:handle_info(Msg, ModuleState),
     process_result(Result, Req, State).
 
+-spec terminate(term(), cowboy_req:req(), state()) -> ok.
 terminate(Reason, Req, State = #state{}) ->
     Module = State#state.module,
     ModuleState = State#state.state,
