@@ -192,7 +192,7 @@ init_without_module_option(_Config) ->
              throw:module_option_missing -> ok
          end,
     ok = try
-             Opts2 = [{init_args, []}],
+             Opts2 = #{init_args => []},
              lasse_handler:init({}, {}, Opts2),
              fail
          catch
@@ -210,7 +210,7 @@ init_with_module_option(_Config) ->
         meck:expect(cowboy_req, chunked_reply, ChunkedReply),
         meck:expect(cowboy_req, header, fun(_, Req) -> {undefined, Req} end),
 
-        Opts = [{module, dummy_handler}],
+        Opts = #{module => dummy_handler},
         {loop, Request, State} = lasse_handler:init({}, {}, Opts)
     after
         catch meck:unload(cowboy_req)
@@ -259,6 +259,7 @@ get_events(Pid) ->
         fun() ->
             try
                 ct:pal("waiting for events at ~p", [self()]),
+                timer:sleep(100),
                 Events = shotgun:events(Pid),
                 ct:pal("Events: ~p", [Events]),
                 [_|_] = [shotgun:parse_event(Bin) || {_, _, Bin} <- Events]

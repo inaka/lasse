@@ -24,36 +24,33 @@ init(_InitArgs, LastEventId, Req) ->
     {ok, Req, LastEventId}.
 
 handle_notify(send, State) ->
-    {send, [{data, <<"notify chunk">>}], State};
+    {send, #{data => <<"notify chunk">>}, State};
 handle_notify(send_id, State) ->
-    Event = [
-             {id, <<"1">>},
-             {data, <<"notify chunk">>},
-             {name, ""}
-            ],
+    Event = #{id => <<"1">>,
+              data => <<"notify chunk">>,
+              name => <<"">>
+             },
     {send, Event, State};
 handle_notify(no_data, State) ->
-    Event = [
-             {id, <<"1">>},
-             {name, "no_data"}
-            ],
+    Event = #{id => <<"1">>,
+              name => "no_data"
+             },
     {send, Event, State};
 handle_notify(nosend, State) ->
     {nosend, State};
 handle_notify(comments, State) ->
-    Event = [
-             {comments, <<"Comment 1\nComment 2">>},
-             {data, <<"some data">>}
-            ],
+    Event = #{comment => <<"Comment 1\nComment 2">>,
+              data => <<"some data">>
+             },
     {send, Event, State};
 handle_notify(last_event_id, State) ->
-    Event = [{data, State}],
+    Event = #{data => State},
     {send, Event, State};
 handle_notify(stop, State) ->
     {stop, State}.
 
 handle_info(send, State) ->
-    {send, [{data, <<"info chunk">>}], State};
+    {send, #{data => <<"info chunk">>}, State};
 handle_info(nosend, State) ->
     {nosend, State};
 handle_info(stop, State) ->
