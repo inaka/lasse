@@ -28,12 +28,12 @@ handle_notify(send, State) ->
 handle_notify(send_id, State) ->
     Event = #{id => <<"1">>,
               data => <<"notify chunk">>,
-              name => <<"">>
+              event => <<"">>
              },
     {send, Event, State};
 handle_notify(no_data, State) ->
     Event = #{id => <<"1">>,
-              name => "no_data"
+              event => "no_data"
              },
     {send, Event, State};
 handle_notify(nosend, State) ->

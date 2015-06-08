@@ -179,7 +179,7 @@ build_event(Event) ->
     [build_comment(maps:get(comment, Event, undefined)),
      build_comment(maps:get('', Event, undefined)),
      build_field(<<"id: ">>, maps:get(id, Event, undefined)),
-     build_field(<<"event: ">>, maps:get(name, Event, undefined)),
+     build_field(<<"event: ">>, maps:get(event, Event, undefined)),
      build_data(maps:get(data, Event, undefined)),
      build_field(<<"retry: ">>, maps:get(retry, Event, undefined)),
      <<"\n">>].

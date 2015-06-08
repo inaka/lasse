@@ -2,7 +2,7 @@ PROJECT = lasse
 
 CONFIG ?= rel/sys.config
 
-SELL_DEPS = sync
+SHELL_DEPS = sync
 TEST_DEPS = cowboy lager shotgun meck katana xref_runner
 
 dep_meck = git https://github.com/eproxus/meck.git 0.8.2
