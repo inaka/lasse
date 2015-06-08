@@ -1,6 +1,32 @@
 # Change Log
 
-## [0.2.0](https://github.com/inaka/lasse/tree/0.2.0)
+## [1.0.0](https://github.com/inaka/lasse/tree/1.0.0) (2015-06-08)
+
+[Full Changelog](https://github.com/inaka/lasse/compare/0.2.0...1.0.0)
+
+**Implemented enhancements:**
+
+- make compatible with erlang.mk and relx [\#17](https://github.com/inaka/lasse/issues/17)
+
+**Fixed bugs:**
+
+- Export types in lasse\_handler [\#28](https://github.com/inaka/lasse/issues/28)
+
+- Complete init callback definition [\#27](https://github.com/inaka/lasse/issues/27)
+
+- Change name to event [\#21](https://github.com/inaka/lasse/issues/21)
+
+**Closed issues:**
+
+- proplists -\> maps [\#29](https://github.com/inaka/lasse/issues/29)
+
+**Merged pull requests:**
+
+- Overhaul [\#31](https://github.com/inaka/lasse/pull/31) ([elbrujohalcon](https://github.com/elbrujohalcon))
+
+- waffle.io Badge [\#30](https://github.com/inaka/lasse/pull/30) ([waffle-iron](https://github.com/waffle-iron))
+
+## [0.2.0](https://github.com/inaka/lasse/tree/0.2.0) (2015-05-05)
 
 [Full Changelog](https://github.com/inaka/lasse/compare/0.1.0...0.2.0)
 
@@ -17,6 +43,8 @@
 - Change version of Cowboy [\#19](https://github.com/inaka/lasse/issues/19)
 
 **Merged pull requests:**
+
+- \[\#25\] new release 0.2.0 [\#26](https://github.com/inaka/lasse/pull/26) ([Euen](https://github.com/Euen))
 
 - Update LICENSE [\#24](https://github.com/inaka/lasse/pull/24) ([andresinaka](https://github.com/andresinaka))
 
