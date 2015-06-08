@@ -172,7 +172,6 @@ process_result({stop, NewState}, Req, State) ->
 
 send_event(Event, Req) ->
     EventMsg = build_event(Event),
-    ct:pal("Sending ~p", [EventMsg]),
     cowboy_req:chunk(EventMsg, Req).
 
 build_event(Event) ->
