@@ -10,10 +10,7 @@
         ]).
 
 init(_InitArgs, _LastEventId, Req) ->
-    InitialEvents = [
-                     [{data, <<"initial 1">>}],
-                     [{data, <<"initial 2">>}]
-                    ],
+    InitialEvents = [#{data => <<"initial 1">>}, #{data => <<"initial 2">>}],
     {ok, Req, InitialEvents, {}}.
 
 handle_info(_, _) ->

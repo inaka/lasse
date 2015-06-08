@@ -15,35 +15,37 @@
 %% Records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--record(state, 
+-record(state,
         {
           module :: module(),
           state :: any()
         }).
+-type state() :: #state{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Behavior definition
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--type event_value() :: 
-        {'id', binary()} | 
-        {'event', binary()} | 
-        {'data', binary()} | 
-        {'retry', binary()}.
-
--type event() :: [event_value(), ...].
+-type event() ::
+    #{ id => binary()
+     , event => binary()
+     , data => binary()
+     , retry => binary()
+     , comment | '' => binary()
+     }.
 
 -type result() ::
     {'send', Event :: event(), NewState :: any()} |
     {'nosend', NewState :: any()} |
     {'stop', NewState :: any()}.
 
--callback init(InitArgs :: any(), LastEvtId :: any(), Req :: cowboy_req:req()) ->
+-callback init(InitArgs::any(), LastEvtId::any(), Req::cowboy_req:req()) ->
     {ok, NewReq :: cowboy_req:req(), State :: any()} |
+    {ok, NewReq :: cowboy_req:req(), Events :: [event()], State :: any()} |
     {no_content, NewReq :: cowboy_req:req()} |
     {
-      shutdown, 
-      StatusCode :: cowboy:http_status(), 
+      shutdown,
+      StatusCode :: cowboy:http_status(),
       Headers :: cowboy:http_headers(),
       Body :: iodata(),
       NewReq :: cowboy_req:req()
@@ -67,21 +69,32 @@
 %% Cowboy callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--type lasse_handler_option()  :: {'module', module()} | {'init_args', any()}.
--type lasse_handler_options() :: [module()] | [lasse_handler_option(), ...].
+-type lasse_handler_options() ::
+    module() |
+    #{ module => module()
+     , init_args => any()
+     }.
 
--spec init(any(), any(), lasse_handler_options()) -> {loop, any(), record(state)}.
+-spec init(any(), cowboy_req:req(), lasse_handler_options()) ->
+    {loop, any(), state()}.
+init(Transport, Req, []) ->
+    init(Transport, Req, #{});
+init(Transport, Req, [Module]) when is_atom(Module) ->
+    init(Transport, Req, #{module => Module});
 init(_Transport, Req, Opts) ->
-    Module = case get_value(module, Opts, Opts) of
-                 Name when is_atom(Name) -> Name;
-                 [Name] when is_atom(Name) -> Name;
-                 _ -> throw(module_option_missing)
-             end,
-    InitArgs = get_value(init_args, Opts, []),
-    {LastEventId, Req} = cowboy_req:header(<<"last-event-id">>, Req),
-    InitResult = Module:init(InitArgs, LastEventId, Req),
-    handle_init(InitResult, Module).
+    try
+      #{module := Module} = Opts,
+      InitArgs = maps:get(init_args, Opts, []),
+      {LastEventId, Req} = cowboy_req:header(<<"last-event-id">>, Req),
+      InitResult = Module:init(InitArgs, LastEventId, Req),
+      handle_init(InitResult, Module)
+    catch
+      _:{badmatch, #{}} ->
+        throw(module_option_missing)
+    end.
 
+-spec info(term(), cowboy_req:req(), state()) ->
+    {ok|loop, cowboy_req:req(), state()}.
 info({message, Msg}, Req, State) ->
     Module = State#state.module,
     ModuleState = State#state.state,
@@ -93,16 +106,17 @@ info(Msg, Req, State) ->
     Result = Module:handle_info(Msg, ModuleState),
     process_result(Result, Req, State).
 
-terminate(Reason, Req, State) ->
+-spec terminate(term(), cowboy_req:req(), state()) -> ok.
+terminate(Reason, Req, State = #state{}) ->
     Module = State#state.module,
     ModuleState = State#state.state,
     Module:terminate(Reason, Req, ModuleState),
     ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% API 
+%%% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+-spec notify(atom() | pid(), term()) -> ok.
 notify(Pid, Msg) ->
     Pid ! {message, Msg},
     ok.
@@ -110,7 +124,6 @@ notify(Pid, Msg) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 handle_init({ok, Req, State}, Module) ->
     handle_init({ok, Req, [], State}, Module);
 handle_init({ok, Req, InitialEvents, State}, Module) ->
@@ -157,41 +170,26 @@ process_result({nosend, NewState}, Req, State) ->
 process_result({stop, NewState}, Req, State) ->
     {ok, Req, State#state{state = NewState}}.
 
-get_value(Key, PropList) ->
-    case lists:keyfind(Key, 1, PropList) of
-        {Key, Value} -> Value;
-        _ -> undefined
-    end.
-
-get_value(Key, PropList, NotFound) ->
-    case get_value(Key, PropList) of
-        undefined -> NotFound;
-        Value -> Value
-    end.
-
 send_event(Event, Req) ->
     EventMsg = build_event(Event),
+    ct:pal("Sending ~p", [EventMsg]),
     cowboy_req:chunk(EventMsg, Req).
 
 build_event(Event) ->
-    [build_comments(Event),
-     build_field(<<"id: ">>, get_value(id, Event)),
-     build_field(<<"event: ">>, get_value(name, Event)),
-     build_data(get_value(data, Event)),
-     build_field(<<"retry: ">>, get_value(retry, Event)),
+    [build_comment(maps:get(comment, Event, undefined)),
+     build_comment(maps:get('', Event, undefined)),
+     build_field(<<"id: ">>, maps:get(id, Event, undefined)),
+     build_field(<<"event: ">>, maps:get(event, Event, undefined)),
+     build_data(maps:get(data, Event, undefined)),
+     build_field(<<"retry: ">>, maps:get(retry, Event, undefined)),
      <<"\n">>].
 
-build_comments(Event) ->
-    Keys = [id, data, name, retry],
-    Comments = lists:foldl(fun proplists:delete/2, Event, Keys),
-    [build_comment(Val) || {_, Val} <- Comments].
-
+build_comment(undefined) ->
+    [];
 build_comment(Comment) ->
     [[<<": ">>, X, <<"\n">>] || X <- binary:split(Comment, <<"\n">>, [global])].
 
 build_field(_, undefined) ->
-    [];
-build_field(_, "") ->
     [];
 build_field(Name, Value) ->
     [Name, Value, <<"\n">>].
@@ -199,4 +197,5 @@ build_field(Name, Value) ->
 build_data(undefined) ->
     throw(data_required);
 build_data(Data) ->
-    [[<<"data: ">>, X, <<"\n">>] || X <- binary:split(Data, <<"\n">>, [global])].
+    [[<<"data: ">>, X, <<"\n">>]
+    || X <- binary:split(Data, <<"\n">>, [global])].
