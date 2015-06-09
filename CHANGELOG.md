@@ -22,6 +22,8 @@
 
 **Merged pull requests:**
 
+- Debug line removed [\#32](https://github.com/inaka/lasse/pull/32) ([elbrujohalcon](https://github.com/elbrujohalcon))
+
 - Overhaul [\#31](https://github.com/inaka/lasse/pull/31) ([elbrujohalcon](https://github.com/elbrujohalcon))
 
 - waffle.io Badge [\#30](https://github.com/inaka/lasse/pull/30) ([waffle-iron](https://github.com/waffle-iron))
