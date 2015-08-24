@@ -1,9 +1,0 @@
-{
-  application, ping_pong,
-  [
-   {description, "The essence of ping-pong."},
-   {vsn, "0.1.0"},
-   {applications, [kernel, stdlib, cowboy, lager]},
-   {mod, {ping_pong, []}}
-  ]
-}.
