@@ -41,16 +41,19 @@
 
 -export_type([event/0, result/0]).
 
--callback init(InitArgs::any(), LastEvtId::any(), Req::cowboy_req:req()) ->
+-callback init(InitArgs :: any(),
+               LastEvtId::undefined | binary(),
+               Req::cowboy_req:req()) ->
     {ok, NewReq :: cowboy_req:req(), State :: any()} |
     {ok, NewReq :: cowboy_req:req(), Events :: [event()], State :: any()} |
-    {no_content, NewReq :: cowboy_req:req()} |
+    {no_content, NewReq :: cowboy_req:req(), State :: any()} |
     {
       shutdown,
       StatusCode :: cowboy:http_status(),
       Headers :: cowboy:http_headers(),
       Body :: iodata(),
-      NewReq :: cowboy_req:req()
+      NewReq :: cowboy_req:req(),
+      State :: any()
     }.
 
 -callback handle_notify(Msg :: any(), State :: any()) ->
