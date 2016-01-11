@@ -13,5 +13,4 @@ start(_Type, _Args) ->
     lasse_server_sup:start_link().
 
 stop(_State) ->
-    cowboy:stop_listener(http_lasse_server),
-    ok.
+    cowboy:stop_listener(http_lasse_server).

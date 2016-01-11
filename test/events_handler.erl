@@ -15,9 +15,9 @@ init(_InitArgs, LastEventId, Req) ->
         {ProcNameBin, Req} when ProcNameBin =/= <<"undefined">> ->
             ProcName = binary_to_atom(ProcNameBin, utf8),
             register(ProcName, self()),
-            lager:info("Initiating a ~p in ~p", [ProcName, whereis(ProcName)]);
+            ct:pal("Initiating a ~p in ~p", [ProcName, whereis(ProcName)]);
         {undefined, Req}  ->
-            lager:info("Initiating handler"),
+            ct:pal("Initiating handler"),
             ok
     end,
 
