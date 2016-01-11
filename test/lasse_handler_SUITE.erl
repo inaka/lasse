@@ -1,6 +1,16 @@
 %%% @doc Test suite for the Cowboy's Server-Sent Events handler.
 -module(lasse_handler_SUITE).
 
+-dialyzer([ {no_opaque, [ cause_chunk_to_fail/1
+                        , init_with_module_option/1
+                        , init_without_module_option/1
+                        ]}
+          , {no_return, [ cause_chunk_to_fail/1
+                        , init_with_module_option/1
+                        , init_without_module_option/1
+                        ]}
+          ]).
+
 -type config() :: [{atom(), term()}].
 
 -export([all/0]).
@@ -43,8 +53,8 @@ init_per_suite(Config) ->
 
 -spec end_per_suite(config()) -> config().
 end_per_suite(Config) ->
-    application:stop(lasse_server),
-    application:stop(shotgun),
+    ok = application:stop(lasse_server),
+    ok = application:stop(shotgun),
     Config.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,11 +71,11 @@ send_and_receive_two_chunks(_Config) ->
 
     % first chunk
     lasse_handler:notify(ProcName, send),
-    [#{data := [<<"notify chunk">>]}] = get_events(Pid),
+    [#{data := <<"notify chunk\n">>}] = get_events(Pid),
 
     % second chunk
     ProcName ! send,
-    [#{data := [<<"info chunk">>]}] = get_events(Pid),
+    [#{data := <<"info chunk\n">>}] = get_events(Pid),
 
     lasse_handler:notify(ProcName, stop),
     close_conn(Pid).
@@ -91,8 +101,8 @@ send_and_receive_initial_events(_Config) ->
     get(Pid, undefined, "/initial-events"),
 
     [
-        #{data := [<<"initial 1">>]},
-        #{data := [<<"initial 2">>]}
+        #{data := <<"initial 1\n">>},
+        #{data := <<"initial 2\n">>}
     ] = get_events(Pid),
 
     close_conn(Pid).
@@ -103,7 +113,7 @@ send_data_and_id(_Config) ->
     get(Pid, ProcName, "/events"),
 
     lasse_handler:notify(ProcName, send_id),
-    [#{id := <<"1">>, data := [<<"notify chunk">>]}] = get_events(Pid),
+    [#{id := <<"1">>, data := <<"notify chunk\n">>}] = get_events(Pid),
 
     lasse_handler:notify(ProcName, stop),
     close_conn(Pid).
@@ -154,7 +164,7 @@ send_last_event_id(_Config) ->
     get(Pid, ProcName, "/events", #{<<"last-event-id">> => <<"42">>}),
 
     lasse_handler:notify(ProcName, last_event_id),
-    [#{data := [<<"42">>]}] = get_events(Pid),
+    [#{data := <<"42\n">>}] = get_events(Pid),
 
     close_conn(Pid).
 

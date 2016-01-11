@@ -1,6 +1,8 @@
 -module(initial_events_handler).
 -behavior(lasse_handler).
 
+-dialyzer(no_behaviours).
+
 -export([
          init/3,
          handle_info/2,

@@ -148,17 +148,17 @@ handle_init({ok, Req, InitialEvents, State}, Module) ->
         {_OtherMethod, _} ->
             Headers = [{<<"content-type">>, <<"text/html">>}],
             StatusCode = 405, % Method not Allowed
-            cowboy_req:reply(StatusCode, Headers, Req),
-            {shutdown, Req, #state{module = Module}}
+            {ok, Req1} = cowboy_req:reply(StatusCode, Headers, Req),
+            {shutdown, Req1, #state{module = Module}}
     end;
-handle_init({no_content, NewReq, State}, Module) ->
-    cowboy_req:reply(204, [], NewReq),
+handle_init({no_content, Req, State}, Module) ->
+    {ok, Req1} = cowboy_req:reply(204, [], Req),
 
-    {shutdown, NewReq, #state{module = Module, state = State}};
-handle_init({shutdown, StatusCode, Headers, Body, NewReq, State}, Module) ->
-    cowboy_req:reply(StatusCode, Headers, Body, NewReq),
+    {shutdown, Req1, #state{module = Module, state = State}};
+handle_init({shutdown, StatusCode, Headers, Body, Req, State}, Module) ->
+    {ok, Req1} = cowboy_req:reply(StatusCode, Headers, Body, Req),
 
-    {shutdown, NewReq, #state{module = Module, state = State}}.
+    {shutdown, Req1, #state{module = Module, state = State}}.
 
 process_result({send, Event, NewState}, Req, State) ->
     case send_event(Event, Req) of

@@ -3,6 +3,7 @@ PROJECT = lasse
 SHELL_DEPS = sync
 TEST_DEPS = cowboy shotgun meck katana mixer
 BUILD_DEPS = inaka_mk hexer_mk
+LOCAL_DEPS = common_test
 
 dep_meck = hex 0.8.4
 dep_cowboy = git https://github.com/extend/cowboy.git 1.0.4
@@ -21,3 +22,5 @@ ERLC_OPTS += +warn_bif_clash +warn_unused_record +warn_deprecated_function +warn
 ERLC_OPTS += +warn_export_vars +warn_exported_vars +warn_missing_spec +warn_untyped_record +debug_info
 
 SHELL_OPTS += -s sync
+
+CT_OPTS = -cover test/cover.spec
