@@ -12,8 +12,8 @@ start_link() ->
     supervisor:start_link(?MODULE, {}).
 
 start_listeners() ->
-    {ok, Port} = application:get_env(cowboy, http_port),
-    {ok, ListenerCount} = application:get_env(cowboy, http_listener_count),
+    Port = 8080,
+    ListenerCount = 1,
 
     Dispatch =
         cowboy_router:compile(
@@ -39,7 +39,8 @@ start_listeners() ->
          {timeout,   12000}
         ],
 
-    cowboy:start_http(http_lasse_server, ListenerCount, RanchOptions, CowboyOptions).
+    cowboy:start_http(
+          http_lasse_server, ListenerCount, RanchOptions, CowboyOptions).
 
 %%% Supervisor behavior functions
 
@@ -49,6 +50,8 @@ init({}) ->
       {
         {one_for_one, 5, 10},
         [
-         {http_lasse_server, {lasse_server_sup, start_listeners, []}, permanent, 1000, worker, [lasse_server_sup]}
+         {http_lasse_server,
+            {lasse_server_sup, start_listeners, []},
+            permanent, 1000, worker, [lasse_server_sup]}
         ]
       }}.

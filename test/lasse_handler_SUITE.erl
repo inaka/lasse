@@ -221,8 +221,7 @@ init_with_module_option(_Config) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 open_conn() ->
-    {ok, Port} = application:get_env(cowboy, http_port),
-    {ok, Pid} = shotgun:open("localhost", Port),
+    {ok, Pid} = shotgun:open("localhost", 8080),
     Pid.
 
 close_conn(Pid) -> shotgun:close(Pid).
