@@ -12,6 +12,6 @@
             {"Example", "https://github.com/inaka/lasse/tree/master/examples/ping_pong"},
             {"SSE Spec", "https://html.spec.whatwg.org/multipage/comms.html#server-sent-events"}
           ]},
-   {build_tools,["make"]}
+   {build_tools,["erlang.mk", "rebar"]}
   ]
 }.
