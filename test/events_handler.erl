@@ -2,22 +2,30 @@
 -behavior(lasse_handler).
 
 -export([
-         init/3,
+         init/2,
          handle_notify/2,
          handle_info/2,
          handle_error/3,
-         terminate/3
+         terminate/3,
+         upgrade/6
         ]).
 
-init(_InitArgs, LastEventId, Req) ->
+
+-spec upgrade(Req, Env, module(), any(), timeout(), run | hibernate)
+  -> {ok, Req, Env} | {suspend, module(), atom(), [any()]}
+  when Req::cowboy_req:req(), Env::cowboy_middleware:env().
+upgrade(Req, Env, Handler, HandlerState, Timeout, run) ->
+  cowboy_loop:upgrade(Req, Env, Handler, HandlerState, Timeout, run);
+upgrade(Req, Env, Handler, HandlerState, Timeout, hibernate) ->
+  cowboy_loop:upgrade(Req, Env, Handler, HandlerState, Timeout, hibernate).
+
+init(LastEventId, Req) ->
     % Take process name from the "process-name" header.
     case cowboy_req:header(<<"process-name">>, Req) of
-        {ProcNameBin, Req} when ProcNameBin =/= <<"undefined">> ->
+        ProcNameBin when ProcNameBin =/= <<"undefined">> ->
             ProcName = binary_to_atom(ProcNameBin, utf8),
-            register(ProcName, self()),
-            ct:pal("Initiating a ~p in ~p", [ProcName, whereis(ProcName)]);
-        {undefined, Req}  ->
-            ct:pal("Initiating handler"),
+            register(ProcName, self());
+        undefined  ->
             ok
     end,
 

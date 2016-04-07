@@ -4,14 +4,14 @@
 -dialyzer(no_behaviours).
 
 -export([
-         init/3,
+         init/2,
          handle_info/2,
          handle_notify/2,
          handle_error/3,
          terminate/3
         ]).
 
-init(_InitArgs, _LastEventId, Req) ->
+init(_LastEventId, Req) ->
     {ok, Req, {}}.
 
 handle_info(_, _) ->

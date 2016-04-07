@@ -4,17 +4,25 @@
 -dialyzer(no_behaviours).
 
 -export([
-         init/3,
+         init/2,
          handle_info/2,
          handle_notify/2,
          handle_error/3,
          terminate/3
         ]).
 
-init(_InitArgs, _LastEventId, Req) ->
+-record(state,
+        {
+          module :: module(),
+          state :: any()
+        }).
+
+
+
+init(_LastEventId, Req) ->
     Headers = [{<<"content-type">>, <<"text/html">>}],
     Body = <<"Sorry, shutdown!">>,
-    {shutdown, 404, Headers, Body, Req, {}}.
+    {shutdown, 404, Headers, Body, Req, #state{module = shutdown_handler}}.
 
 handle_info(Msg, State) ->
     {send, [{data, Msg}], State}.
