@@ -177,15 +177,18 @@ send_last_event_id(_Config) ->
     close_conn(Pid).
 
 cause_chunk_to_fail(_Config) ->
-    try
-        Req = {},
-        State = #state{module = events_handler , state = {}},
-        meck:new(cowboy_req, [passthrough]),
-        meck:expect(cowboy_req, chunk, fun(_, _) -> throw(error) end),
-        {ok, Req, _}  = lasse_handler:info(send, Req, State)
-    after
-        catch meck:unload(cowboy_req)
-    end.
+  ok = try
+          Req = {},
+          State = #state{module = events_handler , state = {}},
+          meck:new(cowboy_req, [passthrough]),
+          meck:expect(cowboy_req, chunk, fun(_, _) -> error end),
+          {ok, Req, _}  = lasse_handler:info(send, Req, State)
+
+        catch
+          error:{try_clause, error} -> ok
+        after
+          meck:unload(cowboy_req)
+        end.
 
 shutdown(_Config) ->
     Pid = open_conn(),
@@ -228,10 +231,11 @@ init_with_module_option(_Config) ->
         meck:expect(cowboy_req, chunked_reply, ChunkedReply),
         meck:expect(cowboy_req, header, fun(_, Req) -> Req end),
         Opts = #{module => Module},
-        {Module, Request, State} = lasse_handler:init({}, Opts)
+        {cowboy_loop, Request, State} = lasse_handler:init({}, Opts)
     after
         catch meck:unload(cowboy_req)
     end.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Auxiliary functions

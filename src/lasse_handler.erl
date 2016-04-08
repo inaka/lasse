@@ -4,7 +4,8 @@
 -export([
          init/2,
          info/3,
-         terminate/3
+         terminate/3,
+         upgrade/6
         ]).
 
 -export([
@@ -69,7 +70,6 @@
   Reason :: any(), Req :: cowboy_req:req(), State :: any()
 ) -> any().
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Cowboy callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,9 +113,17 @@ info(Msg, Req, State) ->
 -spec terminate(term(), cowboy_req:req(), state()) -> ok.
 terminate(Reason, Req, State) ->
   Module = State#state.module,
-  %ModuleState = State#state.state,
-  Module:terminate(Reason, Req, State),
+  ModuleState = State#state.state,
+  Module:terminate(Reason, Req, ModuleState),
   ok.
+
+-spec upgrade(Req, Env, module(), any(), timeout(), run | hibernate)
+  -> {ok, Req, Env} | {suspend, module(), atom(), [any()]}
+  when Req::cowboy_req:req(), Env::cowboy_middleware:env().
+upgrade(Req, Env, Handler, HandlerState, Timeout, run) ->
+  cowboy_loop:upgrade(Req, Env, Handler, HandlerState, Timeout, run);
+upgrade(Req, Env, Handler, HandlerState, Timeout, hibernate) ->
+  cowboy_loop:upgrade(Req, Env, Handler, HandlerState, Timeout, hibernate).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% API
@@ -141,7 +149,7 @@ handle_init({ok, Req, InitialEvents, State}, Module) ->
         fun(Event) -> ok = send_event(Event, Req1) end,
         InitialEvents
       ),
-      {Module, Req1, #state{module = Module, state = State}};
+      {cowboy_loop, Req1, #state{module = Module, state = State}};
 
    _OtherMethod ->
       Headers = [{<<"content-type">>, <<"text/html">>}],
@@ -151,10 +159,10 @@ handle_init({ok, Req, InitialEvents, State}, Module) ->
   end;
 handle_init({no_content, Req, State}, Module) ->
   Req1 = cowboy_req:reply(204, [], Req),
-  {ok, Req1, State};
+  {ok, Req1, #state{module = Module, state = State}};
 handle_init({shutdown, StatusCode, Headers, Body, Req, State}, Module) ->
   Req1 = cowboy_req:reply(StatusCode, Headers, Body, Req),
-  {ok, Req1, State}.
+  {ok, Req1, #state{module = Module, state = State}}.
 
 process_result({send, Event, NewState}, Req, State) ->
   try send_event(Event, Req) of
