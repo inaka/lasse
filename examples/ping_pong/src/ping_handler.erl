@@ -1,18 +1,18 @@
 -module(ping_handler).
 -export([
-         init/3,
+         init/2,
          handle/2,
          info/3,
          terminate/3
         ]).
 
-init(_Transport, Req, _Opts) ->
+init(Req, _Opts) ->
     {ok, Req, {}}.
 
 handle(Req, State) ->
     lists:foreach(fun ping/1, pg2:get_members(pongers)),
-    cowboy_req:reply(200, [], <<"ack">>, Req),
-    {ok, Req, State}.
+     Req1 = cowboy_req:reply(200, [], <<"ack">>, Req),
+    {ok, Req1, State}.
 
 info(_Msg, Req, State) ->
     {ok, Req, State}.

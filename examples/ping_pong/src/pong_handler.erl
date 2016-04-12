@@ -2,14 +2,14 @@
 -behavior(lasse_handler).
 
 -export([
-         init/3,
+         init/2,
          handle_notify/2,
          handle_info/2,
          handle_error/3,
          terminate/3
         ]).
 
-init(_InitArgs, _LastEventId, Req) ->
+init(_LastEventId, Req) ->
     pg2:join(pongers, self()),
     {ok, Req, {}}.
 
