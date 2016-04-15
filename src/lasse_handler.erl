@@ -98,7 +98,7 @@ init(Req, Opts) ->
   end.
 
 -spec info(term(), cowboy_req:req(), state()) ->
-    {ok|loop, cowboy_req:req(), state()}.
+    {ok|stop, cowboy_req:req(), state()}.
 info({message, Msg}, Req, State) ->
   Module = State#state.module,
   ModuleState = State#state.state,

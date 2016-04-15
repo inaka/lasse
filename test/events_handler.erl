@@ -9,19 +9,16 @@
          terminate/3
         ]).
 
-
-
 init(LastEventId, Req) ->
-    % Take process name from the "process-name" header.
-    case cowboy_req:header(<<"process-name">>, Req) of
-        ProcNameBin when ProcNameBin =/= <<"undefined">> ->
-            ProcName = binary_to_atom(ProcNameBin, utf8),
-            register(ProcName, self());
-        undefined  ->
-            ok
-    end,
-
-    {ok, Req, LastEventId}.
+  % Take process name from the "process-name" header.
+  case cowboy_req:header(<<"process-name">>, Req) of
+      ProcNameBin when ProcNameBin =/= <<"undefined">> ->
+          ProcName = binary_to_atom(ProcNameBin, utf8),
+          register(ProcName, self());
+      undefined  ->
+          ok
+  end,
+  {ok, Req, LastEventId}.
 
 handle_notify(send, State) ->
     {send, #{data => <<"notify chunk">>}, State};
