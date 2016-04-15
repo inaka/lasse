@@ -22,7 +22,7 @@
 init(_LastEventId, Req) ->
     Headers = [{<<"content-type">>, <<"text/html">>}],
     Body = <<"Sorry, shutdown!">>,
-    {shutdown, 404, Headers, Body, Req, #state{module = shutdown_handler}}.
+    {shutdown, 404, Headers, Body, Req, #state{}}.
 
 handle_info(Msg, State) ->
     {send, [{data, Msg}], State}.
