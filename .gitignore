@@ -12,3 +12,4 @@ ebin
 logs
 log
 .erlang.mk*
+examples/ping_pong/ping_pong.d
