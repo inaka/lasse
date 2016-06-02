@@ -16,8 +16,8 @@ start_link() ->
     supervisor:start_link(?MODULE, {}).
 
 start_listeners() ->
-    Port = 8080,
-    ListenerCount = 1,
+    Port          = application:get_env(nss, http_port, 8080),
+    ListenerCount = application:get_env(nss, http_listener_count, 1),
 
     Dispatch =
         cowboy_router:compile(

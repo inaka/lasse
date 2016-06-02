@@ -11,10 +11,18 @@
          terminate/3
         ]).
 
+-record(state,
+        {
+          module :: module(),
+          state :: any()
+        }).
+
+
+
 init(_InitArgs, _LastEventId, Req) ->
     Headers = [{<<"content-type">>, <<"text/html">>}],
     Body = <<"Sorry, shutdown!">>,
-    {shutdown, 404, Headers, Body, Req, {}}.
+    {shutdown, 404, Headers, Body, Req, #state{}}.
 
 handle_info(Msg, State) ->
     {send, [{data, Msg}], State}.

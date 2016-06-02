@@ -13,6 +13,14 @@
 
 -type config() :: [{atom(), term()}].
 
+-record(state,
+        {
+          module :: module(),
+          state :: any()
+        }).
+
+-type state() :: #state{}.
+
 -export([all/0]).
 
 -export([
@@ -169,16 +177,18 @@ send_last_event_id(_Config) ->
     close_conn(Pid).
 
 cause_chunk_to_fail(_Config) ->
-    try
-        Req = {},
-        State = {state, events_handler, {}},
+  ok = try
+          Req = {},
+          State = #state{module = events_handler , state = {}},
+          meck:new(cowboy_req, [passthrough]),
+          meck:expect(cowboy_req, chunk, fun(_, _) -> error end),
+          {ok, Req, _}  = lasse_handler:info(send, Req, State)
 
-        meck:new(cowboy_req, [passthrough]),
-        meck:expect(cowboy_req, chunk, fun(_, _) -> {error, just_because} end),
-        {ok, Req, _}  = lasse_handler:info(send, Req, State)
-    after
-        catch meck:unload(cowboy_req)
-    end.
+        catch
+          error:{try_clause, error} -> ok
+        after
+          meck:unload(cowboy_req)
+        end.
 
 shutdown(_Config) ->
     Pid = open_conn(),
@@ -196,14 +206,14 @@ shutdown(_Config) ->
 init_without_module_option(_Config) ->
     ok = try
              Opts = [],
-             lasse_handler:init({}, {}, Opts),
+             lasse_handler:init({}, Opts),
              fail
          catch
              throw:module_option_missing -> ok
          end,
     ok = try
              Opts2 = #{init_args => []},
-             lasse_handler:init({}, {}, Opts2),
+             lasse_handler:init({}, Opts2),
              fail
          catch
              throw:module_option_missing -> ok
@@ -212,27 +222,28 @@ init_without_module_option(_Config) ->
 init_with_module_option(_Config) ->
     try
         Request = {},
-        State = {state, dummy_handler, {}},
+        Module = dummy_handler,
+        State = {state, Module, {}},
 
         meck:new(cowboy_req, [passthrough]),
-        meck:expect(cowboy_req, method, fun(Req) -> {<<"GET">>, Req} end),
-        ChunkedReply = fun(_, _, Req) -> {ok, Req} end,
+        meck:expect(cowboy_req, method, fun(_Req) -> <<"GET">> end),
+        ChunkedReply = fun(_, _, Req) ->  Req end,
         meck:expect(cowboy_req, chunked_reply, ChunkedReply),
-        meck:expect(cowboy_req, header, fun(_, Req) -> {undefined, Req} end),
-
-        Opts = #{module => dummy_handler},
-        {loop, Request, State} = lasse_handler:init({}, {}, Opts)
+        meck:expect(cowboy_req, header, fun(_, Req) -> Req end),
+        Opts = #{module => Module},
+        {cowboy_loop, Request, State} = lasse_handler:init({}, Opts)
     after
         catch meck:unload(cowboy_req)
     end.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Auxiliary functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 open_conn() ->
-    {ok, Pid} = shotgun:open("localhost", 8080),
-    Pid.
+  {ok, Pid} = shotgun:open("localhost", 8383),
+  Pid.
 
 close_conn(Pid) -> shotgun:close(Pid).
 
@@ -244,7 +255,6 @@ get(Pid, Name, Uri, Headers) ->
     NewHeaders = Headers#{<<"process-name">> => atom_to_binary(Name, utf8)},
     {ok, _Ref} =
         shotgun:get(Pid, Uri, NewHeaders, #{async => true, async_mode => sse}),
-
     case Name of
         undefined -> ok;
         Name ->
