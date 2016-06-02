@@ -255,7 +255,6 @@ get(Pid, Name, Uri, Headers) ->
     NewHeaders = Headers#{<<"process-name">> => atom_to_binary(Name, utf8)},
     {ok, _Ref} =
         shotgun:get(Pid, Uri, NewHeaders, #{async => true, async_mode => sse}),
-
     case Name of
         undefined -> ok;
         Name ->

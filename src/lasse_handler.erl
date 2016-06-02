@@ -43,7 +43,7 @@
 
 -export_type([event/0, result/0]).
 
--callback init(LastEvtId::undefined | binary(),
+-callback init(InitArgs :: any(), LastEvtId::undefined | binary(),
                Req::cowboy_req:req()) ->
   {ok, NewReq :: cowboy_req:req(), State :: any()} |
   {ok, NewReq :: cowboy_req:req(), Events :: [event()], State :: any()} |
@@ -89,8 +89,9 @@ init(Req, [Module]) when is_atom(Module) ->
 init(Req, Opts) ->
   try
     #{module := Module} = Opts,
+    InitArgs = maps:get(init_args, Opts, []),
     LastEventId = cowboy_req:header(<<"last-event-id">>, Req),
-    InitResult = Module:init(LastEventId, Req),
+    InitResult = Module:init(InitArgs, LastEventId, Req),
     handle_init(InitResult, Module)
   catch
     _:{badmatch, #{}} ->

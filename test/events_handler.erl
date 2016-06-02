@@ -2,14 +2,14 @@
 -behavior(lasse_handler).
 
 -export([
-         init/2,
+         init/3,
          handle_notify/2,
          handle_info/2,
          handle_error/3,
          terminate/3
         ]).
 
-init(LastEventId, Req) ->
+init(_InitArgs, LastEventId, Req) ->
   % Take process name from the "process-name" header.
   case cowboy_req:header(<<"process-name">>, Req) of
       ProcNameBin when ProcNameBin =/= <<"undefined">> ->

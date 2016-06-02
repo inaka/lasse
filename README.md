@@ -63,7 +63,7 @@ Types:
 <a name="callbacks"></a>
 ## Callbacks
 
-### init(LastEventId, Req) -> {ok, NewReq, State}
+### init(InitArgs, LastEventId, Req) -> {ok, NewReq, State}
     | {ok, NewReq, InitialEvents, State}
     | {no_content, NewReq, State}
     | {shutdown, StatusCode, Headers, Body, NewReq, State}
