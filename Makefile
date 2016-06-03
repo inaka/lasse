@@ -1,5 +1,6 @@
 PROJECT = lasse
 
+DEPS = cowboy
 SHELL_DEPS = sync
 TEST_DEPS = cowboy shotgun meck katana_test mixer
 BUILD_DEPS = inaka_mk hexer_mk
