@@ -1,11 +1,12 @@
 %%% @doc Server-Sent Event handler for Cowboy
 -module(lasse_handler).
 
+-behaviour(cowboy_loop).
+
 -export([
          init/2,
          info/3,
-         terminate/3,
-         upgrade/6
+         terminate/3
         ]).
 
 -export([
@@ -117,14 +118,6 @@ terminate(Reason, Req, State) ->
   ModuleState = State#state.state,
   Module:terminate(Reason, Req, ModuleState),
   ok.
-
--spec upgrade(Req, Env, module(), any(), timeout(), run | hibernate)
-  -> {ok, Req, Env} | {suspend, module(), atom(), [any()]}
-  when Req::cowboy_req:req(), Env::cowboy_middleware:env().
-upgrade(Req, Env, Handler, HandlerState, Timeout, run) ->
-  cowboy_loop:upgrade(Req, Env, Handler, HandlerState, Timeout, run);
-upgrade(Req, Env, Handler, HandlerState, Timeout, hibernate) ->
-  cowboy_loop:upgrade(Req, Env, Handler, HandlerState, Timeout, hibernate).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% API
