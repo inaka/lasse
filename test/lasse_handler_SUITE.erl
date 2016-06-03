@@ -177,18 +177,17 @@ send_last_event_id(_Config) ->
     close_conn(Pid).
 
 cause_chunk_to_fail(_Config) ->
-  ok = try
-          Req = {},
-          State = #state{module = events_handler , state = {}},
-          meck:new(cowboy_req, [passthrough]),
-          meck:expect(cowboy_req, chunk, fun(_, _) -> error end),
-          {ok, Req, _}  = lasse_handler:info(send, Req, State)
-
-        catch
-          error:{try_clause, error} -> ok
-        after
-          meck:unload(cowboy_req)
-        end.
+    ok = try
+        Req = {},
+        State = #state{module = events_handler , state = {}},
+        meck:new(cowboy_req, [passthrough]),
+        meck:expect(cowboy_req, chunk, fun(_, _) -> error end),
+        {ok, Req, _}  = lasse_handler:info(send, Req, State)
+    catch
+        error:{try_clause, error} -> ok
+    after
+        meck:unload(cowboy_req)
+    end.
 
 shutdown(_Config) ->
     Pid = open_conn(),

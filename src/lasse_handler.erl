@@ -82,7 +82,7 @@
    }.
 
 -spec init(cowboy_req:req(), lasse_handler_options()) ->
-  {ok | module(), any(), state()}.
+  {atom(), cowboy_req:req(), state()}.
 init(Req, []) ->
     init(Req, #{});
 init(Req, [Module]) when is_atom(Module) ->
@@ -162,7 +162,7 @@ process_result({send, Event, NewState}, Req, State) ->
   try send_event(Event, Req) of
     ok -> {ok, Req, State#state{state = NewState}}
   catch
-    Reason ->
+    _:Reason ->
       Module = State#state.module,
       ModuleState = State#state.state,
       ErrorNewState = Module:handle_error(Event, Reason, ModuleState),
