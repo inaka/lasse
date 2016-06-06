@@ -8,14 +8,14 @@
         ]).
 
 start() ->
-    {ok, _ } = application:ensure_all_started(ping_pong).
+  {ok, _ } = application:ensure_all_started(ping_pong).
 
 %%% Behavior
 
 %% @private
 start(_Type, _Args) ->
-    ping_pong_sup:start_link().
+  ping_pong_sup:start_link().
 
 stop(_State) ->
-    cowboy:stop_listener(http_ping_pong_server),
-    ok.
+  cowboy:stop_listener(http_ping_pong_server),
+  ok.

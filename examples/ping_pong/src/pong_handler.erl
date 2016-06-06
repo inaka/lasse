@@ -10,17 +10,17 @@
         ]).
 
 init(_InitArgs, _LastEventId, Req) ->
-    pg2:join(pongers, self()),
-    {ok, Req, {}}.
+  pg2:join(pongers, self()),
+  {ok, Req, {}}.
 
 handle_notify(ping, State) ->
-    {send, [{data, <<"pong">>}], State}.
+  {send, [{data, <<"pong">>}], State}.
 
 handle_info(_Msg, State) ->
-    {nosend, State}.
+  {nosend, State}.
 
 handle_error(_Msg, _Reason, State) ->
-    State.
+  State.
 
 terminate(_Reason, _Req, _State) ->
-    ok.
+  ok.

@@ -12,18 +12,18 @@
         ]).
 
 init(_InitArgs, _LastEventId, Req) ->
-    Headers = [{<<"content-type">>, <<"text/html">>}],
-    Body = <<"Sorry, shutdown!">>,
-    {shutdown, 404, Headers, Body, Req, {}}.
+  Headers = [{<<"content-type">>, <<"text/html">>}],
+  Body = <<"Sorry, shutdown!">>,
+  {shutdown, 404, Headers, Body, Req, {}}.
 
 handle_info(Msg, State) ->
-    {send, [{data, Msg}], State}.
+  {send, [{data, Msg}], State}.
 
 handle_notify(Msg, State) ->
-    {send, [{data, Msg}], State}.
+  {send, [{data, Msg}], State}.
 
 handle_error(_, _, _) ->
-    doesnt_matter.
+  doesnt_matter.
 
 terminate(_, _, _) ->
-    ok.
+  ok.
