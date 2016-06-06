@@ -12,16 +12,16 @@
         ]).
 
 init(_InitArgs, _LastEventId, Req) ->
-    {ok, Req, {}}.
+  {ok, Req, {}}.
 
 handle_info(_, _) ->
-    does_not_matter.
+  does_not_matter.
 
 handle_notify(_, _) ->
-    does_not_matter.
+  does_not_matter.
 
 handle_error(_, _, _) ->
-    doesnt_matter.
+  doesnt_matter.
 
 terminate(_, _, _) ->
-    ok.
+  ok.

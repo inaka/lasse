@@ -147,9 +147,8 @@ handle_init({ok, Req, InitialEvents, State}, Module) ->
 
    _OtherMethod ->
       Headers = [{<<"content-type">>, <<"text/html">>}],
-      StatusCode = 405, % Method not Allowed
-      Req1 = cowboy_req:reply(StatusCode, Headers, Req),
-      {cowboy_loop, Req1, #state{module = Module}}
+      Req1 = cowboy_req:reply(405, Headers, Req),
+      {ok, Req1, #state{module = Module}}
   end;
 handle_init({no_content, Req, State}, Module) ->
   Req1 = cowboy_req:reply(204, [], Req),
