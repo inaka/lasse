@@ -12,3 +12,4 @@ ebin
 logs
 log
 .erlang.mk*
+_build/

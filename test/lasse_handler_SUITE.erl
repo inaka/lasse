@@ -1,17 +1,21 @@
 %%% @doc Test suite for the Cowboy's Server-Sent Events handler.
 -module(lasse_handler_SUITE).
 
--dialyzer([ {no_opaque, [ cause_chunk_to_fail/1
-                        , init_with_module_option/1
-                        , init_without_module_option/1
-                        ]}
-          , {no_return, [ cause_chunk_to_fail/1
-                        , init_with_module_option/1
-                        , init_without_module_option/1
-                        ]}
-          ]).
+-dialyzer([{nowarn_function, [init_without_module_option/1,
+                              init_with_module_option/1,
+                              cause_chunk_to_fail/1
+                             ]
+         }]).
+
 
 -type config() :: [{atom(), term()}].
+
+-record(state,
+        {
+          module :: module(),
+          state :: any()
+        }).
+-type state() :: #state{}.
 
 -export([all/0]).
 
@@ -61,6 +65,7 @@ end_per_suite(Config) ->
 %%% Tests Cases
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+-spec send_and_receive_two_chunks(config()) -> ok.
 send_and_receive_two_chunks(_Config) ->
     %  Client connection is opened here
     % since doing it in init_per_suite and
@@ -80,6 +85,7 @@ send_and_receive_two_chunks(_Config) ->
     lasse_handler:notify(ProcName, stop),
     close_conn(Pid).
 
+-spec send_and_do_not_receive_anything(config()) -> ok.
 send_and_do_not_receive_anything(_Config) ->
     Pid = open_conn(),
     ProcName = send_and_do_not_receive_anything,
@@ -96,6 +102,7 @@ send_and_do_not_receive_anything(_Config) ->
     lasse_handler:notify(ProcName, stop),
     close_conn(Pid).
 
+-spec send_and_receive_initial_events(config()) -> ok.
 send_and_receive_initial_events(_Config) ->
     Pid = open_conn(),
     get(Pid, undefined, "/initial-events"),
@@ -107,6 +114,7 @@ send_and_receive_initial_events(_Config) ->
 
     close_conn(Pid).
 
+-spec send_data_and_id(config()) -> ok.
 send_data_and_id(_Config) ->
     Pid = open_conn(),
     ProcName = send_data_and_id,
@@ -118,6 +126,7 @@ send_data_and_id(_Config) ->
     lasse_handler:notify(ProcName, stop),
     close_conn(Pid).
 
+-spec send_comments_and_data(config()) -> ok.
 send_comments_and_data(_Config) ->
     Pid = open_conn(),
     ProcName = send_comments_and_data,
@@ -134,6 +143,7 @@ send_comments_and_data(_Config) ->
     lasse_handler:notify(ProcName, stop),
     close_conn(Pid).
 
+-spec do_not_send_data(config()) -> ok.
 do_not_send_data(_Config) ->
     Pid = open_conn(),
     ProcName = do_not_send_data,
@@ -142,6 +152,7 @@ do_not_send_data(_Config) ->
     ok = get_no_events(Pid),
     close_conn(Pid).
 
+-spec send_post_and_fail(config()) -> ok.
 send_post_and_fail(_Config) ->
     Pid = open_conn(),
     ProcName = send_post_and_fail,
@@ -150,6 +161,7 @@ send_post_and_fail(_Config) ->
 
     close_conn(Pid).
 
+-spec check_no_content(config()) -> ok.
 check_no_content(_Config) ->
     Pid = open_conn(),
 
@@ -157,6 +169,7 @@ check_no_content(_Config) ->
 
     close_conn(Pid).
 
+-spec send_last_event_id(config()) -> ok.
 send_last_event_id(_Config) ->
     Pid = open_conn(),
     ProcName = send_last_event_id,
@@ -168,6 +181,7 @@ send_last_event_id(_Config) ->
 
     close_conn(Pid).
 
+-spec cause_chunk_to_fail(config()) -> {ok, cowboy_req:req(), state()}.
 cause_chunk_to_fail(_Config) ->
     try
         Req = {},
@@ -180,6 +194,7 @@ cause_chunk_to_fail(_Config) ->
         catch meck:unload(cowboy_req)
     end.
 
+-spec shutdown(config()) -> ok.
 shutdown(_Config) ->
     Pid = open_conn(),
 
@@ -193,6 +208,7 @@ shutdown(_Config) ->
 
     close_conn(Pid).
 
+-spec init_without_module_option(config()) -> ok.
 init_without_module_option(_Config) ->
     ok = try
              Opts = [],
@@ -209,6 +225,7 @@ init_without_module_option(_Config) ->
              throw:module_option_missing -> ok
          end.
 
+-spec init_with_module_option(config()) -> {loop, cowboy_req:req(), state()}.
 init_with_module_option(_Config) ->
     try
         Request = {},
@@ -267,14 +284,14 @@ get_events(Pid) ->
     ktn_task:wait_for_success(
         fun() ->
             try
-                ct:pal("waiting for events at ~p", [self()]),
+                ct:log("waiting for events at ~p", [self()]),
                 timer:sleep(100),
                 Events = shotgun:events(Pid),
-                ct:pal("Events: ~p", [Events]),
+                ct:log("Events: ~p", [Events]),
                 [_|_] = [shotgun:parse_event(Bin) || {_, _, Bin} <- Events]
             catch
                 _:Error ->
-                    ct:pal("Failed: ~p", [Error]),
+                    ct:log("Failed: ~p", [Error]),
                     throw(Error)
             end
         end).
@@ -282,9 +299,9 @@ get_events(Pid) ->
 get_raw_events(Pid) ->
     ktn_task:wait_for_success(
         fun() ->
-            ct:pal("waiting for events at ~p", [self()]),
+            ct:log("waiting for events at ~p", [self()]),
             Events = shotgun:events(Pid),
-            ct:pal("Events: ~p", [Events]),
+            ct:log("Events: ~p", [Events]),
             [_|_] = Events
         end).
 
