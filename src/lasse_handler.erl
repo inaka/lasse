@@ -75,15 +75,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -type lasse_handler_options() ::
-    module() |
+    [module()] |
     #{ module => module()
      , init_args => any()
      }.
 
 -spec init(any(), cowboy_req:req(), lasse_handler_options()) ->
-    {loop, any(), state()}.
-init(Transport, Req, []) ->
-    init(Transport, Req, #{});
+    {loop, cowboy_req:req(), state()}.
 init(Transport, Req, [Module]) when is_atom(Module) ->
     init(Transport, Req, #{module => Module});
 init(_Transport, Req, Opts) ->
@@ -94,7 +92,7 @@ init(_Transport, Req, Opts) ->
       InitResult = Module:init(InitArgs, LastEventId, Req),
       handle_init(InitResult, Module)
     catch
-      _:{badmatch, #{}} ->
+      _:{badmatch, _} ->
         throw(module_option_missing)
     end.
 

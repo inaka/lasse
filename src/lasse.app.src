@@ -4,7 +4,7 @@
    {description, "Lasse: Server-Sent Event handler for Cowboy."},
    {vsn, "1.1.0"},
    {modules, []},
-   {applications, [kernel, stdlib]},
+   {applications, [kernel, stdlib, cowboy]},
    {registered, []},
    {maintainers,["Inaka"]},
    {licenses,["Apache 2.0"]},
@@ -12,6 +12,6 @@
             {"Example", "https://github.com/inaka/lasse/tree/master/examples/ping_pong"},
             {"SSE Spec", "https://html.spec.whatwg.org/multipage/comms.html#server-sent-events"}
           ]},
-   {build_tools,["erlang.mk", "rebar"]}
+   {build_tools,["rebar"]}
   ]
 }.
