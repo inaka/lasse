@@ -1,7 +1,7 @@
 # Change Log
 
-## [1.0.2](https://github.com/inaka/lasse/tree/1.0.2) (2017-06-14)
-[Full Changelog](https://github.com/inaka/lasse/compare/1.0.1...1.0.2)
+## [1.1.1](https://github.com/inaka/lasse/tree/1.1.1) (2017-06-14)
+[Full Changelog](https://github.com/inaka/lasse/compare/1.0.1...1.1.1)
 
 **Fixed bugs:**
 
@@ -9,6 +9,7 @@
 
 **Closed issues:**
 
+- Bump Version to 1.0.2 [\#49](https://github.com/inaka/lasse/issues/49)
 - Move form erlang.mk to rebar3 [\#47](https://github.com/inaka/lasse/issues/47)
 - Update repo and make it ready for hex.pm [\#40](https://github.com/inaka/lasse/issues/40)
 - Switch build tools to erlang.mk and republish to hex.pm [\#39](https://github.com/inaka/lasse/issues/39)
@@ -16,6 +17,7 @@
 
 **Merged pull requests:**
 
+- \[Close \#49\] Bump Version to 1.0.2 [\#50](https://github.com/inaka/lasse/pull/50) ([Euen](https://github.com/Euen))
 - \[Close \#47\] Move from Erlang.mk to rebar3 and add specs [\#48](https://github.com/inaka/lasse/pull/48) ([Euen](https://github.com/Euen))
 - \[Close \#42\] Euen.42.update to cowboy 2 [\#44](https://github.com/inaka/lasse/pull/44) ([Euen](https://github.com/Euen))
 - \[Fix \#40\] Update dependencies; Update erlang.mk; Add ruleset to elvis config; Add rebar.config file [\#41](https://github.com/inaka/lasse/pull/41) ([harenson](https://github.com/harenson))
