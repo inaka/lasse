@@ -2,7 +2,7 @@
   application, lasse,
   [
    {description, "Lasse: Server-Sent Event handler for Cowboy."},
-   {vsn, "1.1.0"},
+   {vsn, "1.0.2"},
    {modules, []},
    {applications, [kernel, stdlib, cowboy]},
    {registered, []},
