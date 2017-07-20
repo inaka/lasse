@@ -2,9 +2,9 @@ PROJECT = ping_pong
 
 DEPS = cowboy lasse sync
 
-dep_cowboy = https://github.com/extend/cowboy.git 0.10.0
-dep_lasse = ../../ master
-dep_sync = https://github.com/rustyio/sync master
+dep_cowboy = git https://github.com/extend/cowboy.git 1.0.x
+dep_lasse = git ../../ master
+dep_sync = git https://github.com/rustyio/sync master
 
 include erlang.mk
 
