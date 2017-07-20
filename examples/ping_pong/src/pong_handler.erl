@@ -14,7 +14,7 @@ init(_InitArgs, _LastEventId, Req) ->
     {ok, Req, {}}.
 
 handle_notify(ping, State) ->
-    {send, [{data, <<"pong">>}], State}.
+    {send, #{data => <<"pong">>}, State}.
 
 handle_info(_Msg, State) ->
     {nosend, State}.

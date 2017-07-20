@@ -4,6 +4,7 @@
    {description, "The essence of ping-pong."},
    {vsn, "0.1.0"},
    {applications, [kernel, stdlib, cowboy]},
+   {modules,      []},
    {mod, {ping_pong, []}}
   ]
 }.
