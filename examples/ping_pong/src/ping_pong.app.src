@@ -5,6 +5,7 @@
    {vsn, "0.1.0"},
    {modules, []},
    {applications, [kernel, stdlib, cowboy]},
+   {modules,      []},
    {mod, {ping_pong, []}}
   ]
 }.

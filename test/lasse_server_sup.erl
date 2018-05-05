@@ -8,9 +8,11 @@
 
 -export([init/1]).
 
+-spec start_link() -> {'ok', pid()} | {'error', any()}.
 start_link() ->
   supervisor:start_link(?MODULE, {}).
 
+-spec start_listeners() -> {ok, pid()} | {error, any()}.
 start_listeners() ->
   Port = 8383,
   ListenerCount = 1,
@@ -44,6 +46,7 @@ start_listeners() ->
 
 %%% Supervisor behavior functions
 
+-spec init({}) -> {ok, {{one_for_one, 5, 10}, [supervisor:child_spec()]}}.
 init({}) ->
   {
     ok,
