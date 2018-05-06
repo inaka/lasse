@@ -11,7 +11,7 @@ init(Req, _Opts) ->
 
 handle(Req, State) ->
   lists:foreach(fun ping/1, pg2:get_members(pongers)),
-  Req1 = cowboy_req:reply(200, [], <<"ack">>, Req),
+  Req1 = cowboy_req:reply(200, #{}, <<"ack">>, Req),
   {ok, Req1, State}.
 
 info(_Msg, Req, State) ->

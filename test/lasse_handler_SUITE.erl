@@ -188,7 +188,7 @@ cause_chunk_to_fail(_Config) ->
     Req = {},
     State = #state{module = events_handler , state = {}},
     meck:new(cowboy_req, [passthrough]),
-    meck:expect(cowboy_req, chunk, fun(_, _) -> error end),
+    meck:expect(cowboy_req, stream_body, fun(_, _, _) -> error end),
     {ok, Req, _}  = lasse_handler:info(send, Req, State)
   catch
     error:{try_clause, error} -> ok
@@ -236,8 +236,8 @@ init_with_module_option(_Config) ->
 
     meck:new(cowboy_req, [passthrough]),
     meck:expect(cowboy_req, method, fun(_Req) -> <<"GET">> end),
-    ChunkedReply = fun(_, _, Req) ->  Req end,
-    meck:expect(cowboy_req, chunked_reply, ChunkedReply),
+    StreamReply = fun(_, _, Req) ->  Req end,
+    meck:expect(cowboy_req, stream_reply, StreamReply),
     meck:expect(cowboy_req, header, fun(_, Req) -> Req end),
     Opts = #{module => Module},
     {cowboy_loop, Request, State} = lasse_handler:init({}, Opts)

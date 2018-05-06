@@ -78,14 +78,14 @@
 
 -type lasse_handler_options() ::
     [module()] |
-    #{ module => module()
+    #{ module := module()
      , init_args => any()
      }.
 
 -spec init(cowboy_req:req(), lasse_handler_options()) ->
   {atom(), cowboy_req:req(), state()}.
-init(Req, []) ->
-  init(Req, #{});
+init(_Req, []) ->
+  throw(module_option_missing);
 init(Req, [Module]) when is_atom(Module) ->
   init(Req, #{module => Module});
 init(Req, Opts) ->
@@ -137,9 +137,9 @@ handle_init({ok, Req, InitialEvents, State}, Module) ->
   case cowboy_req:method(Req) of
     <<"GET">> ->
       % "no-cache recommended to prevent caching of event data.
-      Headers = [{<<"content-type">>, <<"text/event-stream">>},
-                 {<<"cache-control">>, <<"no-cache">>}],
-      Req1 = cowboy_req:chunked_reply(200, Headers, Req),
+      Headers = #{<<"content-type">> => <<"text/event-stream">>,
+                  <<"cache-control">> => <<"no-cache">>},
+      Req1 = cowboy_req:stream_reply(200, Headers, Req),
       lists:foreach(
         fun(Event) -> ok = send_event(Event, Req1) end,
         InitialEvents
@@ -147,12 +147,12 @@ handle_init({ok, Req, InitialEvents, State}, Module) ->
       {cowboy_loop, Req1, #state{module = Module, state = State}};
 
    _OtherMethod ->
-      Headers = [{<<"content-type">>, <<"text/html">>}],
+      Headers = #{<<"content-type">> => <<"text/html">>},
       Req1 = cowboy_req:reply(405, Headers, Req),
       {ok, Req1, #state{module = Module}}
   end;
 handle_init({no_content, Req, State}, Module) ->
-  Req1 = cowboy_req:reply(204, [], Req),
+  Req1 = cowboy_req:reply(204, Req),
   {ok, Req1, #state{module = Module, state = State}};
 handle_init({shutdown, StatusCode, Headers, Body, Req, State}, Module) ->
   Req1 = cowboy_req:reply(StatusCode, Headers, Body, Req),
@@ -175,7 +175,7 @@ process_result({stop, NewState}, Req, State) ->
 
 send_event(Event, Req) ->
     EventMsg = build_event(Event),
-    cowboy_req:chunk(EventMsg, Req).
+    cowboy_req:stream_body(EventMsg, nofin, Req).
 
 build_event(Event) ->
     [build_comment(maps:get(comment, Event, undefined)),
