@@ -14,7 +14,7 @@
 -spec init(term(), term(), cowboy_req:req()) ->
     {shutdown, 404, cowboy:http_headers(), binary(), cowboy_req:req(), {}}.
 init(_InitArgs, _LastEventId, Req) ->
-  Headers = [{<<"content-type">>, <<"text/html">>}],
+  Headers = #{<<"content-type">> => <<"text/html">>},
   Body = <<"Sorry, shutdown!">>,
   {shutdown, 404, Headers, Body, Req, {}}.
 

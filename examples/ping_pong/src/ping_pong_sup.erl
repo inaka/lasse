@@ -17,7 +17,6 @@ start_link() ->
 
 start_listeners() ->
   Port = 8080,
-  ListenerCount = 1,
 
   Dispatch =
     cowboy_router:compile(
@@ -32,15 +31,13 @@ start_listeners() ->
 
   RanchOptions = [{port, Port}],
   CowboyOptions =
-    [
-     {env,       [{dispatch, Dispatch}]},
-     {compress,  true},
-     {timeout,   12000}
-    ],
+    #{env       => #{dispatch => Dispatch},
+      compress  => true,
+      timeout   => 12000
+    },
 
-  cowboy:start_http(
+  cowboy:start_clear(
     http_ping_pong_server,
-    ListenerCount,
     RanchOptions,
     CowboyOptions
    ).

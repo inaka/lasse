@@ -15,7 +15,6 @@ start_link() ->
 -spec start_listeners() -> {ok, pid()} | {error, any()}.
 start_listeners() ->
   Port = 8383,
-  ListenerCount = 1,
 
   Dispatch =
     cowboy_router:compile(
@@ -35,14 +34,13 @@ start_listeners() ->
       {port, Port}
     ],
   CowboyOptions =
-    [
-     {env,       [{dispatch, Dispatch}]},
-     {compress,  true},
-     {timeout,   12000}
-    ],
+    #{env       => #{dispatch => Dispatch},
+      compress  => true,
+      timeout   => 12000
+    },
 
-  cowboy:start_http(
-    http_lasse_server, ListenerCount, RanchOptions, CowboyOptions).
+  cowboy:start_clear(
+    http_lasse_server, RanchOptions, CowboyOptions).
 
 %%% Supervisor behavior functions
 
