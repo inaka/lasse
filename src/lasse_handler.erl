@@ -85,9 +85,9 @@
 -spec init(cowboy_req:req(), lasse_handler_options()) ->
   {atom(), cowboy_req:req(), state()}.
 init(Req, []) ->
-    init(Req, #{});
+  init(Req, #{});
 init(Req, [Module]) when is_atom(Module) ->
-    init(Req, #{module => Module});
+  init(Req, #{module => Module});
 init(Req, Opts) ->
   try
     #{module := Module} = Opts,
@@ -103,15 +103,15 @@ init(Req, Opts) ->
 -spec info(term(), cowboy_req:req(), state()) ->
     {ok|stop, cowboy_req:req(), state()}.
 info({message, Msg}, Req, State) ->
-    Module = State#state.module,
-    ModuleState = State#state.state,
-    Result = Module:handle_notify(Msg, ModuleState),
-    process_result(Result, Req, State);
+  Module = State#state.module,
+  ModuleState = State#state.state,
+  Result = Module:handle_notify(Msg, ModuleState),
+  process_result(Result, Req, State);
 info(Msg, Req, State) ->
-    Module = State#state.module,
-    ModuleState = State#state.state,
-    Result = Module:handle_info(Msg, ModuleState),
-    process_result(Result, Req, State).
+  Module = State#state.module,
+  ModuleState = State#state.state,
+  Result = Module:handle_info(Msg, ModuleState),
+  process_result(Result, Req, State).
 
 -spec terminate(term(), cowboy_req:req(), state()) -> ok.
 terminate(Reason, Req, State) ->
