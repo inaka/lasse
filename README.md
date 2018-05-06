@@ -43,9 +43,6 @@ And you can check all of our open-source projects at [inaka.github.io](http://in
 
 You can find some example applications that implement the ``lasse_handler`` in the ``examples`` folder.
 
-Running the examples is as simple as executing ``make run``, given you have the ``make`` tool, ``git``
-and ``erlang`` installed in your environment.
-
 ## API
 
 ### notify(Pid, Message) -> ok

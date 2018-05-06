@@ -1,4 +1,5 @@
 -module(pong_handler).
+
 -behavior(lasse_handler).
 
 -export([
