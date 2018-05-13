@@ -43,9 +43,6 @@ And you can check all of our open-source projects at [inaka.github.io](http://in
 
 You can find some example applications that implement the ``lasse_handler`` in the ``examples`` folder.
 
-Running the examples is as simple as executing ``make run``, given you have the ``make`` tool, ``git``
-and ``erlang`` installed in your environment.
-
 ## API
 
 ### notify(Pid, Message) -> ok
@@ -60,7 +57,7 @@ Types:
 <a name="callbacks"></a>
 ## Callbacks
 
-### init(InitArgs, LastEventId, Req) -> {ok, NewReq, State}
+### init(LastEventId, Req) -> {ok, NewReq, State}
     | {ok, NewReq, InitialEvents, State}
     | {no_content, NewReq, State}
     | {shutdown, StatusCode, Headers, Body, NewReq, State}

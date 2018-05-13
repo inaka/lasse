@@ -1,3 +1,5 @@
+.rebar3/
+_checkouts/
 lasse.d
 .erlang.mk/
 .eunit
