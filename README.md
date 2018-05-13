@@ -1,4 +1,3 @@
-[![Stories in Ready](https://badge.waffle.io/inaka/lasse.png?label=ready&title=Ready)](https://waffle.io/inaka/lasse)
 # Lasse
 
 <img src="http://i61.tinypic.com/40pkl.jpg" align="right" style="float:right" height="400" />
@@ -7,9 +6,9 @@ SSE handler for Cowboy.
 
 ### References
 
-* [Cowboy](/extend/cowboy)
+* [Cowboy](https://github.com/extend/cowboy)
 * [SSE](http://dev.w3.org/html5/eventsource/)
-* [canillita's handler](/canillita/blob/master/src/canillita_news_handler.erl) (as a reference)
+* [canillita's handler](https://github.com/inaka/canillita/blob/master/src/canillita_news_handler.erl) (as a reference)
 
 ### Usage
 
