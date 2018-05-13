@@ -3,16 +3,15 @@
 
 -dialyzer(no_behaviours).
 
--export([
-         init/3,
-         handle_info/2,
-         handle_notify/2,
-         handle_error/3,
-         terminate/3
+-export([ init/3
+        , handle_info/2
+        , handle_notify/2
+        , handle_error/3
+        , terminate/3
         ]).
 
 -spec init(term(), term(), cowboy_req:req()) ->
-    {shutdown, 404, cowboy:http_headers(), binary(), cowboy_req:req(), {}}.
+  {shutdown, 404, cowboy:http_headers(), binary(), cowboy_req:req(), {}}.
 init(_InitArgs, _LastEventId, Req) ->
   Headers = #{<<"content-type">> => <<"text/html">>},
   Body = <<"Sorry, shutdown!">>,

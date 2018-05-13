@@ -1,9 +1,8 @@
 -module(lasse_server_sup).
 -behavior(supervisor).
 
--export([
-         start_link/0,
-         start_listeners/0
+-export([ start_link/0
+        , start_listeners/0
         ]).
 
 -export([init/1]).
@@ -19,28 +18,23 @@ start_listeners() ->
   Dispatch =
     cowboy_router:compile(
       [ {'_',
-         [
-          {<<"/">>, cowboy_static, {file, "test/index.html"}},
-          {<<"/events">>, lasse_handler, [events_handler]},
-          {<<"/initial-events">>, lasse_handler, [initial_events_handler]},
-          {<<"/shutdown">>, lasse_handler, [shutdown_handler]},
-          {<<"/no_content">>, lasse_handler, [no_content_handler]}
+         [ {<<"/">>, cowboy_static, {file, "test/index.html"}}
+         , {<<"/events">>, lasse_handler, [events_handler]}
+         , {<<"/initial-events">>, lasse_handler, [initial_events_handler]}
+         , {<<"/shutdown">>, lasse_handler, [shutdown_handler]}
+         , {<<"/no_content">>, lasse_handler, [no_content_handler]}
          ]
         }
       ]),
 
-  RanchOptions =
-    [
-      {port, Port}
-    ],
+  RanchOptions = [{port, Port}],
   CowboyOptions =
-    #{env       => #{dispatch => Dispatch},
-      compress  => true,
-      timeout   => 12000
-    },
+    #{ env       => #{dispatch => Dispatch}
+     , compress  => true
+     , timeout   => 12000
+     },
 
-  cowboy:start_clear(
-    http_lasse_server, RanchOptions, CowboyOptions).
+  cowboy:start_clear(http_lasse_server, RanchOptions, CowboyOptions).
 
 %%% Supervisor behavior functions
 

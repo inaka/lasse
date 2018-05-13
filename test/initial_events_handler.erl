@@ -3,12 +3,11 @@
 
 -dialyzer(no_behaviours).
 
--export([
-         init/3,
-         handle_info/2,
-         handle_notify/2,
-         handle_error/3,
-         terminate/3
+-export([ init/3
+        , handle_info/2
+        , handle_notify/2
+        , handle_error/3
+        , terminate/3
         ]).
 
 -spec init(any(), any(), cowboy_req:req()) ->

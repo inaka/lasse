@@ -1,12 +1,9 @@
 -module(lasse_server).
 -behavior(application).
 
--export([
-         start/2,
-         stop/1
+-export([ start/2
+        , stop/1
         ]).
-
-%%% Behavior
 
 %% @private
 -spec start(atom(), term()) -> {'ok', pid()} | {'error', any()}.

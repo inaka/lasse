@@ -1,16 +1,13 @@
 -module(ping_pong).
 -behavior(application).
 
--export([
-         start/0,
-         start/2,
-         stop/1
+-export([ start/0
+        , start/2
+        , stop/1
         ]).
 
 start() ->
   {ok, _ } = application:ensure_all_started(ping_pong).
-
-%%% Behavior
 
 %% @private
 start(_Type, _Args) ->

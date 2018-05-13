@@ -3,25 +3,20 @@
 
 -behaviour(cowboy_loop).
 
--export([
-         init/2,
-         info/3,
-         terminate/3
+-export([ init/2
+        , info/3
+        , terminate/3
         ]).
 
--export([
-         notify/2
-        ]).
+-export([notify/2]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--record(state,
-        {
-          module :: module(),
-          state :: any()
-        }).
+-record(state, { module :: module()
+               , state :: any()
+               }).
 -type state() :: #state{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,58 +24,51 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -type event() ::
-    #{ id => binary()
-     , event => binary()
-     , data => binary()
-     , retry => binary()
-     , comment | '' => binary()
-     }.
+  #{ id => binary()
+   , event => binary()
+   , data => binary()
+   , retry => binary()
+   , comment | '' => binary()
+   }.
 
 -type result() ::
-    {'send', Event :: event(), NewState :: any()} |
-    {'nosend', NewState :: any()} |
-    {'stop', NewState :: any()}.
+  {'send', Event :: event(), NewState :: any()} |
+  {'nosend', NewState :: any()} |
+  {'stop', NewState :: any()}.
 
 -export_type([event/0, result/0]).
 
 -callback init(InitArgs :: any(),
                LastEvtId::undefined | binary(),
                Req::cowboy_req:req()) ->
-    {ok, NewReq :: cowboy_req:req(), State :: any()} |
-    {ok, NewReq :: cowboy_req:req(), Events :: [event()], State :: any()} |
-    {no_content, NewReq :: cowboy_req:req(), State :: any()} |
-    {
-      shutdown,
-      StatusCode :: cowboy:http_status(),
-      Headers :: cowboy:http_headers(),
-      Body :: iodata(),
-      NewReq :: cowboy_req:req(),
-      State :: any()
-    }.
+  {ok, NewReq :: cowboy_req:req(), State :: any()} |
+  {ok, NewReq :: cowboy_req:req(), Events :: [event()], State :: any()} |
+  {no_content, NewReq :: cowboy_req:req(), State :: any()} |
+  { shutdown
+  , StatusCode :: cowboy:http_status()
+  , Headers :: cowboy:http_headers()
+  , Body :: iodata()
+  , NewReq :: cowboy_req:req()
+  , State :: any()
+  }.
 
--callback handle_notify(Msg :: any(), State :: any()) ->
-    result().
+-callback handle_notify(Msg :: any(), State :: any()) -> result().
 
--callback handle_info(Msg :: any(), State :: any()) ->
-    result().
+-callback handle_info(Msg :: any(), State :: any()) -> result().
 
--callback handle_error(Msg :: any(), Reason :: any(), State :: any()) ->
-    any().
+-callback handle_error(Msg :: any(), Reason :: any(), State :: any()) -> any().
 
--callback terminate(Reason :: any(),
-                    Req :: cowboy_req:req(),
-                    State :: any()) ->
-    any().
+-callback terminate(Reason :: any(), Req :: cowboy_req:req(), State :: any()) -> any().
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Cowboy callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -type lasse_handler_options() ::
-    [module()] |
-    #{ module := module()
-     , init_args => any()
-     }.
+  [module()] |
+  #{ module := module()
+   , init_args => any()
+   }.
 
 -spec init(cowboy_req:req(), lasse_handler_options()) ->
   {atom(), cowboy_req:req(), state()}.
@@ -101,7 +89,7 @@ init(Req, Opts) ->
   end.
 
 -spec info(term(), cowboy_req:req(), state()) ->
-    {ok|stop, cowboy_req:req(), state()}.
+  {ok|stop, cowboy_req:req(), state()}.
 info({message, Msg}, Req, State) ->
   Module = State#state.module,
   ModuleState = State#state.state,
@@ -125,14 +113,14 @@ terminate(Reason, Req, State) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec notify(atom() | pid(), term()) -> ok.
 notify(Pid, Msg) ->
-    Pid ! {message, Msg},
-    ok.
+  Pid ! {message, Msg},
+  ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 handle_init({ok, Req, State}, Module) ->
-    handle_init({ok, Req, [], State}, Module);
+  handle_init({ok, Req, [], State}, Module);
 handle_init({ok, Req, InitialEvents, State}, Module) ->
   case cowboy_req:method(Req) of
     <<"GET">> ->
@@ -140,10 +128,7 @@ handle_init({ok, Req, InitialEvents, State}, Module) ->
       Headers = #{<<"content-type">> => <<"text/event-stream">>,
                   <<"cache-control">> => <<"no-cache">>},
       Req1 = cowboy_req:stream_reply(200, Headers, Req),
-      lists:foreach(
-        fun(Event) -> ok = send_event(Event, Req1) end,
-        InitialEvents
-      ),
+      lists:foreach(fun(Event) -> ok = send_event(Event, Req1) end, InitialEvents),
       {cowboy_loop, Req1, #state{module = Module, state = State}};
 
    _OtherMethod ->
@@ -174,30 +159,30 @@ process_result({stop, NewState}, Req, State) ->
   {stop, Req, State#state{state = NewState}}.
 
 send_event(Event, Req) ->
-    EventMsg = build_event(Event),
-    cowboy_req:stream_body(EventMsg, nofin, Req).
+  EventMsg = build_event(Event),
+  cowboy_req:stream_body(EventMsg, nofin, Req).
 
 build_event(Event) ->
-    [build_comment(maps:get(comment, Event, undefined)),
-     build_comment(maps:get('', Event, undefined)),
-     build_field(<<"id: ">>, maps:get(id, Event, undefined)),
-     build_field(<<"event: ">>, maps:get(event, Event, undefined)),
-     build_data(maps:get(data, Event, undefined)),
-     build_field(<<"retry: ">>, maps:get(retry, Event, undefined)),
-     <<"\n">>].
+  [ build_comment(maps:get(comment, Event, undefined))
+  , build_comment(maps:get('', Event, undefined))
+  , build_field(<<"id: ">>, maps:get(id, Event, undefined))
+  , build_field(<<"event: ">>, maps:get(event, Event, undefined))
+  , build_data(maps:get(data, Event, undefined))
+  , build_field(<<"retry: ">>, maps:get(retry, Event, undefined))
+  , <<"\n">>
+  ].
 
 build_comment(undefined) ->
-    [];
+  [];
 build_comment(Comment) ->
-    [[<<": ">>, X, <<"\n">>] || X <- binary:split(Comment, <<"\n">>, [global])].
+  [[<<": ">>, X, <<"\n">>] || X <- binary:split(Comment, <<"\n">>, [global])].
 
 build_field(_, undefined) ->
-    [];
+  [];
 build_field(Name, Value) ->
-    [Name, Value, <<"\n">>].
+  [Name, Value, <<"\n">>].
 
 build_data(undefined) ->
-    throw(data_required);
+  throw(data_required);
 build_data(Data) ->
-    [[<<"data: ">>, X, <<"\n">>]
-    || X <- binary:split(Data, <<"\n">>, [global])].
+  [[<<"data: ">>, X, <<"\n">>] || X <- binary:split(Data, <<"\n">>, [global])].
