@@ -1,5 +1,21 @@
 # Change Log
 
+## [1.2.0](https://github.com/inaka/lasse/tree/1.2.0) (2018-05-13)
+[Full Changelog](https://github.com/inaka/lasse/compare/1.1.1...1.2.0)
+
+**Closed issues:**
+
+- Move the example to compile with rebar3 instead Erlang.mk [\#54](https://github.com/inaka/lasse/issues/54)
+- Examples doesn't work [\#45](https://github.com/inaka/lasse/issues/45)
+
+**Merged pull requests:**
+
+- Support for Cowboy 2.x [\#57](https://github.com/inaka/lasse/pull/57) ([elbrujohalcon](https://github.com/elbrujohalcon))
+- Remove dead hipchat link [\#56](https://github.com/inaka/lasse/pull/56) ([Euen](https://github.com/Euen))
+- Remove dead hipchat link [\#55](https://github.com/inaka/lasse/pull/55) ([elbrujohalcon](https://github.com/elbrujohalcon))
+- Updates to make the example run with latest erlang.mk and cowboy 1.0.… [\#53](https://github.com/inaka/lasse/pull/53) ([vimalearnest](https://github.com/vimalearnest))
+- Reference's links are broken [\#46](https://github.com/inaka/lasse/pull/46) ([ferigis](https://github.com/ferigis))
+
 ## [1.1.1](https://github.com/inaka/lasse/tree/1.1.1) (2017-06-14)
 [Full Changelog](https://github.com/inaka/lasse/compare/1.0.1...1.1.1)
 
@@ -9,14 +25,17 @@
 
 **Closed issues:**
 
+- Bump Version to 1.1.1 [\#51](https://github.com/inaka/lasse/issues/51)
 - Bump Version to 1.0.2 [\#49](https://github.com/inaka/lasse/issues/49)
 - Move form erlang.mk to rebar3 [\#47](https://github.com/inaka/lasse/issues/47)
+- Update Lasse in order to work fine with Cowboy 2.x [\#42](https://github.com/inaka/lasse/issues/42)
 - Update repo and make it ready for hex.pm [\#40](https://github.com/inaka/lasse/issues/40)
 - Switch build tools to erlang.mk and republish to hex.pm [\#39](https://github.com/inaka/lasse/issues/39)
 - Fulfill the open-source checklist [\#18](https://github.com/inaka/lasse/issues/18)
 
 **Merged pull requests:**
 
+- \[Close \#51\] Bump Version to 1.1.1 [\#52](https://github.com/inaka/lasse/pull/52) ([Euen](https://github.com/Euen))
 - \[Close \#49\] Bump Version to 1.0.2 [\#50](https://github.com/inaka/lasse/pull/50) ([Euen](https://github.com/Euen))
 - \[Close \#47\] Move from Erlang.mk to rebar3 and add specs [\#48](https://github.com/inaka/lasse/pull/48) ([Euen](https://github.com/Euen))
 - \[Close \#42\] Euen.42.update to cowboy 2 [\#44](https://github.com/inaka/lasse/pull/44) ([Euen](https://github.com/Euen))
